@@ -15,17 +15,17 @@
       width="{{cropperWidth}}" 
       height="{{cropperHeight}}" 
       imgSrc="{{originalPath}}" 
-      cut_ratio="{{1.777}}" 
+      lock_ratio="{{false}}" 
       bind:load="cropperload" 
       bind:imageload="loadimage"
     ></image-cropper>
-    <view class="crop-tip">拖动调整裁剪边界</view>
+    <view class="crop-tip">拖动或缩放调整裁剪边界</view>
     <button class="confirm-btn" bindtap="confirmCrop">确认裁剪</button>
   </view>
   
   <!-- 预览区域 -->
   <view class="preview-container" wx:if="{{thumbnail}}">
-    <view class="preview-title">错题图片预览（已裁剪压缩）</view>
+    <view class="preview-title">错题图片预览（已裁剪压缩，{{fileSize}}KB）</view>
     <image 
       class="preview-img" 
       src="{{thumbnail}}" 
@@ -35,4 +35,7 @@
     <view class="temp-storage-tip">✅ 图片已保存至微信临时存储</view>
     <button class="upload-btn" bindtap="uploadToCloud">存储到云端服务器</button>
   </view>
+  
+  <!-- 隐藏canvas用于JPEG压缩 -->
+  <canvas canvas-id="tempCanvas" style="display: none;"></canvas>
 </view>

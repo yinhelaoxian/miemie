@@ -1,122 +1,125 @@
 // miniprogram/pages/index/index.js
-
 Page({
   data: {
-    showCropper: false, // 是否显示裁剪界面
-    originalPath: '', // 原始图片路径
-    cropperWidth: 300, // 默认裁剪框宽度（动态设置）
-    cropperHeight: 169, // 默认裁剪框高度（动态设置）
-    thumbnail: '', // 压缩后图片的临时路径
-    compressedPath: '' // 压缩后的临时路径
+    showCropper: false,
+    originalPath: '',
+    cropperWidth: 300,
+    cropperHeight: 169,
+    thumbnail: '',
+    compressedPath: '',
+    fileSize: 0
   },
 
   onLoad: function () {
-    // 延迟初始化组件
     setTimeout(() => {
       this.initCropper();
-    }, 1000);
+    }, 3000);
   },
 
   onReady: function () {
-    // 再次尝试初始化组件
     if (!this.cropper) {
       this.initCropper();
     }
   },
 
-  // 初始化裁剪组件
   initCropper: function () {
     this.cropper = this.selectComponent("#image-cropper");
     if (!this.cropper) {
-      console.error('裁剪组件初始化失败');
-      wx.showToast({ title: '裁剪组件加载失败，请检查配置', icon: 'none', duration: 3000 });
+      console.error('裁剪组件初始化失败，等待重试');
     } else {
       console.log('裁剪组件初始化成功');
     }
   },
 
-  // 拍照功能
   takePhoto: function () {
     const that = this;
-
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['camera'],
-      camera: 'back',
-      success: (res) => {
-        const originalPath = res.tempFiles[0].tempFilePath;
-        console.log('拍照成功，原图路径:', originalPath);
-
-        // 验证图片路径
-        wx.getFileSystemManager().access({
-          path: originalPath,
-          success: () => {
-            // 获取原始图片信息，设置裁剪框
-            wx.getImageInfo({
-              src: originalPath,
-              success: (info) => {
-                console.log('原始图片信息:', info);
-                const defaultWidth = info.width; // 使用原始宽度
-                const defaultHeight = Math.floor(defaultWidth * (9 / 16)); // 按16:9计算高度
-                that.setData({
-                  showCropper: true,
-                  originalPath: originalPath,
-                  cropperWidth: defaultWidth,
-                  cropperHeight: defaultHeight
+    wx.authorize({
+      scope: 'scope.camera',
+      success() {
+        wx.chooseMedia({
+          count: 1,
+          mediaType: ['image'],
+          sourceType: ['camera'],
+          camera: 'back',
+          success: (res) => {
+            const originalPath = res.tempFiles[0].tempFilePath;
+            console.log('拍照成功，原图路径:', originalPath);
+            wx.getFileSystemManager().access({
+              path: originalPath,
+              success: () => {
+                wx.getImageInfo({
+                  src: originalPath,
+                  success: (info) => {
+                    console.log('原始图片信息:', info);
+                    const defaultWidth = Math.floor(info.width * 0.9); // 90%宽度
+                    const defaultHeight = Math.floor(defaultWidth * (9 / 16)); // 初始16:9
+                    that.setData({
+                      showCropper: true,
+                      originalPath: originalPath,
+                      cropperWidth: defaultWidth,
+                      cropperHeight: defaultHeight
+                    });
+                    wx.showToast({ title: '请拖动或缩放裁剪框（默认90%宽度）', icon: 'none' });
+                    if (!that.cropper) {
+                      that.initCropper();
+                    }
+                  },
+                  fail: (err) => {
+                    console.error('获取图片信息失败:', err);
+                    wx.showToast({ title: '获取图片信息失败，请重试', icon: 'none' });
+                  }
                 });
-                wx.showToast({ title: '请调整裁剪框后确认（默认16:9）', icon: 'none' });
-                // 再次尝试初始化组件
-                if (!that.cropper) {
-                  that.initCropper();
-                }
               },
               fail: (err) => {
-                console.error('获取图片信息失败:', err);
-                wx.showToast({ title: '获取图片信息失败，请重试', icon: 'none' });
+                console.error('图片路径无效:', err);
+                wx.showToast({ title: '图片路径无效，请重新拍照', icon: 'none' });
               }
             });
           },
           fail: (err) => {
-            console.error('图片路径无效:', err);
-            wx.showToast({ title: '图片路径无效，请重新拍照', icon: 'none' });
+            if (err.errMsg.includes('cancel')) {
+              wx.showToast({ title: '已取消拍照', icon: 'none' });
+            } else {
+              wx.showToast({ title: '拍照失败，请重试', icon: 'none' });
+              console.error('拍照失败:', err);
+            }
           }
         });
       },
-      fail: (err) => {
-        if (err.errMsg.includes('cancel')) {
-          wx.showToast({ title: '已取消拍照', icon: 'none' });
-        } else {
-          wx.showToast({ title: '拍照失败，请重试', icon: 'none' });
-          console.error('拍照失败:', err);
-        }
+      fail() {
+        wx.showToast({ title: '请先授权摄像头权限', icon: 'none' });
+        setTimeout(() => {
+          wx.openSetting({
+            success: (settingRes) => {
+              if (!settingRes.authSetting['scope.camera']) {
+                wx.showToast({ title: '未授权摄像头，无法拍照', icon: 'none' });
+              }
+            }
+          });
+        }, 1500);
       }
     });
   },
 
-  // 裁剪组件加载完成
   cropperload: function (e) {
     console.log('裁剪组件加载完成:', e);
-    // 再次尝试初始化
     if (!this.cropper) {
       this.initCropper();
     }
   },
 
-  // 图片加载到裁剪组件
   loadimage: function (e) {
     console.log('图片加载完成:', e.detail);
     wx.hideLoading();
     if (this.cropper) {
       this.cropper.imgReset();
     } else {
-      console.error('裁剪组件未初始化');
+      console.error('裁剪组件未初始化，将直接压缩');
       wx.showToast({ title: '裁剪组件未初始化，将直接压缩', icon: 'none', duration: 3000 });
       this.compressWithFallback(this.data.originalPath);
     }
   },
 
-  // 确认裁剪
   confirmCrop: function () {
     const that = this;
     console.log('触发确认裁剪');
@@ -134,47 +137,59 @@ Page({
         const croppedPath = res.url;
         console.log('裁剪后图片路径:', croppedPath);
 
-        // 验证裁剪图片尺寸
+        // 使用canvas转换为JPEG并压缩
+        const ctx = wx.createCanvasContext('tempCanvas', this);
         wx.getImageInfo({
           src: croppedPath,
           success: (info) => {
             console.log('裁剪图片信息:', info);
-            const aspectRatio = info.width / info.height;
-            if (Math.abs(aspectRatio - 1.777) > 0.2) {
-              console.warn('裁剪图片比例非16:9:', info.width, info.height);
-              wx.showToast({ title: '裁剪比例非16:9，继续压缩', icon: 'none' });
-            }
-
-            // 压缩裁剪后的图片
-            wx.compressImage({
-              src: croppedPath,
-              quality: 50, // 提高质量避免全黑
-              success: (compressRes) => {
-                const compressedPath = compressRes.tempFilePath;
-                console.log('压缩成功，压缩路径:', compressedPath);
-
-                // 验证压缩后图片
-                wx.getImageInfo({
-                  src: compressedPath,
-                  success: (compressInfo) => {
-                    console.log('压缩图片信息:', compressInfo);
-                    that.setData({
-                      thumbnail: compressedPath,
-                      compressedPath: compressedPath,
-                      showCropper: false
-                    });
-                    wx.showToast({ title: '裁剪压缩成功', icon: 'success' });
-                  },
-                  fail: (err) => {
-                    console.error('获取压缩图片信息失败:', err);
-                    wx.showToast({ title: '获取压缩图片信息失败，请重试', icon: 'none' });
-                  }
-                });
-              },
-              fail: (err) => {
-                console.error('压缩失败:', err);
-                wx.showToast({ title: '图片压缩失败，请重试', icon: 'none' });
-              }
+            const canvasWidth = info.width;
+            const canvasHeight = info.height;
+            ctx.drawImage(croppedPath, 0, 0, canvasWidth, canvasHeight);
+            ctx.draw(false, () => {
+              wx.canvasToTempFilePath({
+                canvasId: 'tempCanvas',
+                fileType: 'jpg',
+                quality: 0.4,
+                success: (canvasRes) => {
+                  const compressedPath = canvasRes.tempFilePath;
+                  console.log('JPEG压缩成功，压缩路径:', compressedPath);
+                  wx.getFileSystemManager().stat({
+                    path: compressedPath,
+                    success: (statRes) => {
+                      const fileSize = Math.round(statRes.stat.size / 1024);
+                      console.log('压缩图片大小:', fileSize, 'KB');
+                      if (fileSize > 50) {
+                        console.warn('压缩后图片过大，尝试更低质量');
+                        that.compressWithFallback(croppedPath);
+                      } else {
+                        that.setData({
+                          thumbnail: compressedPath,
+                          compressedPath: compressedPath,
+                          showCropper: false,
+                          fileSize: fileSize
+                        });
+                        wx.showToast({ title: `裁剪压缩成功（${fileSize}KB）`, icon: 'success' });
+                      }
+                    },
+                    fail: (err) => {
+                      console.error('获取文件大小失败:', err);
+                      that.setData({
+                        thumbnail: compressedPath,
+                        compressedPath: compressedPath,
+                        showCropper: false,
+                        fileSize: 0
+                      });
+                      wx.showToast({ title: '裁剪压缩成功', icon: 'success' });
+                    }
+                  });
+                },
+                fail: (err) => {
+                  console.error('canvas导出JPEG失败:', err);
+                  wx.showToast({ title: '图片压缩失败，尝试备用方案', icon: 'none' });
+                  that.compressWithFallback(croppedPath);
+                }
+              }, this);
             });
           },
           fail: (err) => {
@@ -190,21 +205,38 @@ Page({
     });
   },
 
-  // 回退压缩方案（无裁剪）
   compressWithFallback: function (originalPath) {
     const that = this;
     wx.compressImage({
       src: originalPath,
-      quality: 50, // 保持清晰度
+      quality: 30,
       success: (compressRes) => {
         const compressedPath = compressRes.tempFilePath;
         console.log('回退压缩成功，压缩路径:', compressedPath);
-        that.setData({
-          thumbnail: compressedPath,
-          compressedPath: compressedPath,
-          showCropper: false
+        wx.getFileSystemManager().stat({
+          path: compressedPath,
+          success: (statRes) => {
+            const fileSize = Math.round(statRes.stat.size / 1024);
+            console.log('回退压缩图片大小:', fileSize, 'KB');
+            that.setData({
+              thumbnail: compressedPath,
+              compressedPath: compressedPath,
+              showCropper: false,
+              fileSize: fileSize
+            });
+            wx.showToast({ title: `图片压缩成功（${fileSize}KB，未裁剪）`, icon: 'success' });
+          },
+          fail: (err) => {
+            console.error('获取回退压缩文件大小失败:', err);
+            that.setData({
+              thumbnail: compressedPath,
+              compressedPath: compressedPath,
+              showCropper: false,
+              fileSize: 0
+            });
+            wx.showToast({ title: '图片压缩成功（未裁剪）', icon: 'success' });
+          }
         });
-        wx.showToast({ title: '图片压缩成功（未裁剪）', icon: 'success' });
       },
       fail: (err) => {
         console.error('回退压缩失败:', err);
@@ -213,7 +245,6 @@ Page({
     });
   },
 
-  // 预览图片
   previewImage: function () {
     const { thumbnail } = this.data;
     if (!thumbnail) {
@@ -234,22 +265,19 @@ Page({
     });
   },
 
-  // 上传到云存储
   uploadToCloud: function () {
-    const { compressedPath } = this.data;
+    const { compressedPath, thumbnail } = this.data;
     if (!compressedPath) {
       wx.showToast({ title: '无图片可上传', icon: 'none' });
       return;
     }
 
-    // 检查云开发初始化
     if (!wx.cloud) {
       console.error('云开发未初始化');
       wx.showToast({ title: '云开发未初始化，请检查配置', icon: 'none', duration: 3000 });
       return;
     }
 
-    // 检查网络状态
     wx.getNetworkType({
       success: (res) => {
         if (res.networkType === 'none') {
@@ -257,21 +285,37 @@ Page({
           return;
         }
 
-        // 检查文件是否存在
         wx.getFileSystemManager().access({
           path: compressedPath,
           success: () => {
             wx.showLoading({ title: '正在上传...', mask: true });
+            const cloudPath = `wrong-questions/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
             wx.cloud.uploadFile({
-              cloudPath: `wrong-questions/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`,
+              cloudPath: cloudPath,
               filePath: compressedPath,
               success: (uploadRes) => {
-                wx.hideLoading();
                 console.log('上传成功，云文件ID:', uploadRes.fileID);
-                wx.showToast({ title: '已成功存储到云端服务器', icon: 'success' });
-                this.setData({
-                  thumbnail: '',
-                  compressedPath: ''
+                wx.cloud.getTempFileURL({
+                  fileList: [uploadRes.fileID],
+                  success: (urlRes) => {
+                    wx.hideLoading();
+                    const cloudUrl = urlRes.fileList[0].tempFileURL;
+                    console.log('云存储临时URL:', cloudUrl);
+                    this.setData({
+                      thumbnail: cloudUrl,
+                      compressedPath: '',
+                      fileSize: this.data.fileSize
+                    });
+                    wx.showToast({ title: '已成功存储到云端服务器', icon: 'success' });
+                  },
+                  fail: (err) => {
+                    wx.hideLoading();
+                    console.error('获取云存储URL失败:', err);
+                    this.setData({
+                      compressedPath: ''
+                    });
+                    wx.showToast({ title: '云存储成功，但获取URL失败', icon: 'none' });
+                  }
                 });
               },
               fail: (err) => {
@@ -302,12 +346,3 @@ Page({
     });
   }
 });
-
-// 说明：
-/* 1. 修复初始化：增加1.5秒延迟初始化（onLoad），并在onReady和cropperload中再次尝试。
-2. 裁剪框：默认宽度=原始宽度，高度=宽度*9/16（16:9），移除lock_ratio，用户可自由调整。
-3. 修复确认触发：在confirmCrop中验证this.cropper，添加日志，失败时回退压缩。
-4. 修复全黑：提高quality至50，验证路径有效性。
-5. 体积：保持~12.5KB，quality可调至40-60。
-6. 云环境：使用cloud1-7gugkxzh24b665f4。
-*/

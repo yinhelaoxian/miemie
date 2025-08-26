@@ -24,7 +24,7 @@ git add .
 if ! git diff --cached --quiet; then
     # 提交更改
     echo "提交更改..."
-    git commit -m "$commit_message"
+    git commit -m "$commit_message:$(date)"
     
     # 拉取远程最新更改（防止冲突）
     echo "拉取远程最新更改..."

@@ -29,20 +29,20 @@
 
 .cropper-container {
   width: 100%;
-  height: calc(100vh - 200rpx); /* 动态适配屏幕高度，防止按钮隐藏 */
+  height: calc(100vh - 300rpx);
   background-color: #fff;
   padding: 20rpx;
   border-radius: 20rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
   margin-bottom: 40rpx;
-  position: relative; /* 确保按钮固定 */
+  position: relative;
 }
 
 .crop-tip {
   font-size: 24rpx;
   color: #666;
   text-align: center;
-  margin-bottom: 20rpx;
+  margin: 20rpx 0;
 }
 
 .confirm-btn {
@@ -53,11 +53,10 @@
   border-radius: 45rpx;
   background-color: #07c160;
   color: #fff;
-  margin-top: 20rpx;
-  position: absolute;
-  bottom: 20rpx;
+  position: fixed;
+  bottom: 40rpx;
   left: 10%;
-  z-index: 9999; /* 确保按钮可见且可点击 */
+  z-index: 9999;
 }
 
 .preview-container {
