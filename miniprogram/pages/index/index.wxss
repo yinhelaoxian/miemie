@@ -1,4 +1,4 @@
-/* index.wxss: 样式文件 */
+/* miniprogram/pages/index/index.wxss */
 .container {
   padding: 20rpx;
   display: flex;
@@ -46,6 +46,7 @@
   background-color: #07c160;
   color: #fff;
   margin-top: 20rpx;
+  z-index: 9999; /* 确保按钮可点击 */
 }
 
 .preview-container {

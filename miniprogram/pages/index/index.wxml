@@ -1,6 +1,6 @@
-<!-- index.wxml: 页面结构文件 -->
+<!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
-  <view class="title">咩咩错题本 · 拍照录入</view>
+  <view class="title">咩咩错题 · 拍照录入</view>
   
   <!-- 拍照按钮 -->
   <button class="take-photo-btn" bindtap="takePhoto">拍照录入错题</button>
