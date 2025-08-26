@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "Mie~~",
+  "usingComponents": {
+    "cloud-tip-modal": "/components/cloudTipModal/index",
+    "image-cropper": "/components/image-cropper/image-cropper"
+  }
+}

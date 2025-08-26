@@ -1,0 +1,36 @@
+<!-- index.wxml: 页面结构文件 -->
+<view class="container">
+  <view class="title">咩咩错题本 · 拍照录入</view>
+  
+  <!-- 拍照按钮 -->
+  <button class="take-photo-btn" bindtap="takePhoto">拍照录入错题</button>
+  
+  <!-- 裁剪界面 -->
+  <view class="cropper-container" wx:if="{{showCropper}}">
+    <image-cropper 
+      id="image-cropper" 
+      limit_move="{{true}}" 
+      disable_rotate="{{true}}" 
+      width="{{cropperWidth}}" 
+      height="{{cropperHeight}}" 
+      imgSrc="{{originalPath}}" 
+      cut_ratio="{{1.777}}" 
+      bind:load="cropperload" 
+      bind:imageload="loadimage"
+    ></image-cropper>
+    <button class="confirm-btn" bindtap="confirmCrop">确认裁剪</button>
+  </view>
+  
+  <!-- 预览区域 -->
+  <view class="preview-container" wx:if="{{thumbnail}}">
+    <view class="preview-title">错题图片预览（已裁剪压缩）</view>
+    <image 
+      class="preview-img" 
+      src="{{thumbnail}}" 
+      mode="widthFix" 
+      bindtap="previewImage"
+    />
+    <view class="temp-storage-tip">✅ 图片已保存至微信临时存储</view>
+    <button class="upload-btn" bindtap="uploadToCloud">存储到云端服务器</button>
+  </view>
+</view>
