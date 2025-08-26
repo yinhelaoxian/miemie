@@ -5,6 +5,7 @@ Page({
     originalPath: '',
     cropperWidth: 300,
     cropperHeight: 169,
+    maxWidth: 0, // 图片最大宽度
     thumbnail: '',
     compressedPath: '',
     fileSize: 0
@@ -13,7 +14,7 @@ Page({
   onLoad: function () {
     setTimeout(() => {
       this.initCropper();
-    }, 3000);
+    }, 4000); // 延长至4秒
   },
 
   onReady: function () {
@@ -51,15 +52,16 @@ Page({
                   src: originalPath,
                   success: (info) => {
                     console.log('原始图片信息:', info);
-                    const defaultWidth = Math.floor(info.width * 0.9); // 90%宽度
+                    const defaultWidth = Math.floor(info.width * 0.9); // 默认90%
                     const defaultHeight = Math.floor(defaultWidth * (9 / 16)); // 初始16:9
                     that.setData({
                       showCropper: true,
                       originalPath: originalPath,
                       cropperWidth: defaultWidth,
-                      cropperHeight: defaultHeight
+                      cropperHeight: defaultHeight,
+                      maxWidth: info.width // 允许拖拽至100%
                     });
-                    wx.showToast({ title: '请拖动或缩放裁剪框（默认90%宽度）', icon: 'none' });
+                    wx.showToast({ title: '请拖动或缩放裁剪框（可达图片全宽）', icon: 'none' });
                     if (!that.cropper) {
                       that.initCropper();
                     }
@@ -137,20 +139,23 @@ Page({
         const croppedPath = res.url;
         console.log('裁剪后图片路径:', croppedPath);
 
-        // 使用canvas转换为JPEG并压缩
+        // 使用canvas压缩并转为JPEG
         const ctx = wx.createCanvasContext('tempCanvas', this);
         wx.getImageInfo({
           src: croppedPath,
           success: (info) => {
             console.log('裁剪图片信息:', info);
-            const canvasWidth = info.width;
-            const canvasHeight = info.height;
+            // 缩放至最大宽度600px
+            const maxWidth = 600;
+            const scale = maxWidth / info.width;
+            const canvasWidth = Math.min(info.width, maxWidth);
+            const canvasHeight = Math.floor(info.height * scale);
             ctx.drawImage(croppedPath, 0, 0, canvasWidth, canvasHeight);
             ctx.draw(false, () => {
               wx.canvasToTempFilePath({
                 canvasId: 'tempCanvas',
                 fileType: 'jpg',
-                quality: 0.4,
+                quality: 0.3, // 目标~12.5KB
                 success: (canvasRes) => {
                   const compressedPath = canvasRes.tempFilePath;
                   console.log('JPEG压缩成功，压缩路径:', compressedPath);
@@ -207,39 +212,57 @@ Page({
 
   compressWithFallback: function (originalPath) {
     const that = this;
-    wx.compressImage({
+    wx.getImageInfo({
       src: originalPath,
-      quality: 30,
-      success: (compressRes) => {
-        const compressedPath = compressRes.tempFilePath;
-        console.log('回退压缩成功，压缩路径:', compressedPath);
-        wx.getFileSystemManager().stat({
-          path: compressedPath,
-          success: (statRes) => {
-            const fileSize = Math.round(statRes.stat.size / 1024);
-            console.log('回退压缩图片大小:', fileSize, 'KB');
-            that.setData({
-              thumbnail: compressedPath,
-              compressedPath: compressedPath,
-              showCropper: false,
-              fileSize: fileSize
-            });
-            wx.showToast({ title: `图片压缩成功（${fileSize}KB，未裁剪）`, icon: 'success' });
-          },
-          fail: (err) => {
-            console.error('获取回退压缩文件大小失败:', err);
-            that.setData({
-              thumbnail: compressedPath,
-              compressedPath: compressedPath,
-              showCropper: false,
-              fileSize: 0
-            });
-            wx.showToast({ title: '图片压缩成功（未裁剪）', icon: 'success' });
-          }
+      success: (info) => {
+        const maxWidth = 600;
+        const scale = maxWidth / info.width;
+        const canvasWidth = Math.min(info.width, maxWidth);
+        const canvasHeight = Math.floor(info.height * scale);
+        const ctx = wx.createCanvasContext('tempCanvas', this);
+        ctx.drawImage(originalPath, 0, 0, canvasWidth, canvasHeight);
+        ctx.draw(false, () => {
+          wx.canvasToTempFilePath({
+            canvasId: 'tempCanvas',
+            fileType: 'jpg',
+            quality: 0.2,
+            success: (canvasRes) => {
+              const compressedPath = canvasRes.tempFilePath;
+              console.log('回退压缩成功，压缩路径:', compressedPath);
+              wx.getFileSystemManager().stat({
+                path: compressedPath,
+                success: (statRes) => {
+                  const fileSize = Math.round(statRes.stat.size / 1024);
+                  console.log('回退压缩图片大小:', fileSize, 'KB');
+                  that.setData({
+                    thumbnail: compressedPath,
+                    compressedPath: compressedPath,
+                    showCropper: false,
+                    fileSize: fileSize
+                  });
+                  wx.showToast({ title: `图片压缩成功（${fileSize}KB，未裁剪）`, icon: 'success' });
+                },
+                fail: (err) => {
+                  console.error('获取回退压缩文件大小失败:', err);
+                  that.setData({
+                    thumbnail: compressedPath,
+                    compressedPath: compressedPath,
+                    showCropper: false,
+                    fileSize: 0
+                  });
+                  wx.showToast({ title: '图片压缩成功（未裁剪）', icon: 'success' });
+                }
+              });
+            },
+            fail: (err) => {
+              console.error('回退压缩失败:', err);
+              wx.showToast({ title: '图片压缩失败，请重试', icon: 'none' });
+            }
+          }, this);
         });
       },
       fail: (err) => {
-        console.error('回退压缩失败:', err);
+        console.error('获取回退图片信息失败:', err);
         wx.showToast({ title: '图片压缩失败，请重试', icon: 'none' });
       }
     });

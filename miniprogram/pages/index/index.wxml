@@ -14,12 +14,13 @@
       scale_ratio="{{0.5}}" 
       width="{{cropperWidth}}" 
       height="{{cropperHeight}}" 
+      max_width="{{maxWidth}}" 
       imgSrc="{{originalPath}}" 
       lock_ratio="{{false}}" 
       bind:load="cropperload" 
       bind:imageload="loadimage"
     ></image-cropper>
-    <view class="crop-tip">拖动或缩放调整裁剪边界</view>
+    <view class="crop-tip">拖动或缩放调整裁剪框（可达图片全宽）</view>
     <button class="confirm-btn" bindtap="confirmCrop">确认裁剪</button>
   </view>
   
