@@ -1,6 +1,6 @@
 <!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
-  <view class="title">咩咩错题 · 拍照录入</view>
+  <view class="title">咩咩错题</view>
   
   <!-- 拍照按钮 -->
   <button class="take-photo-btn" bindtap="takePhoto">拍照录入错题</button>
@@ -9,8 +9,9 @@
   <view class="cropper-container" wx:if="{{showCropper}}">
     <image-cropper 
       id="image-cropper" 
-      limit_move="{{true}}" 
+      limit_move="{{false}}" 
       disable_rotate="{{true}}" 
+      scale_ratio="{{0.5}}" 
       width="{{cropperWidth}}" 
       height="{{cropperHeight}}" 
       imgSrc="{{originalPath}}" 
@@ -18,6 +19,7 @@
       bind:load="cropperload" 
       bind:imageload="loadimage"
     ></image-cropper>
+    <view class="crop-tip">拖动调整裁剪边界</view>
     <button class="confirm-btn" bindtap="confirmCrop">确认裁剪</button>
   </view>
   

@@ -14,7 +14,7 @@ Page({
     // 延迟初始化组件
     setTimeout(() => {
       this.initCropper();
-    }, 1500); // 增加延迟至1.5秒
+    }, 1000);
   },
 
   onReady: function () {
@@ -39,75 +39,57 @@ Page({
   takePhoto: function () {
     const that = this;
 
-    // 检查摄像头权限
-    wx.authorize({
-      scope: 'scope.camera',
-      success() {
-        wx.chooseMedia({
-          count: 1,
-          mediaType: ['image'],
-          sourceType: ['camera'],
-          camera: 'back',
-          success: (res) => {
-            const originalPath = res.tempFiles[0].tempFilePath;
-            console.log('拍照成功，原图路径:', originalPath);
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['camera'],
+      camera: 'back',
+      success: (res) => {
+        const originalPath = res.tempFiles[0].tempFilePath;
+        console.log('拍照成功，原图路径:', originalPath);
 
-            // 验证图片路径
-            wx.getFileSystemManager().access({
-              path: originalPath,
-              success: () => {
-                // 获取原始图片信息，设置裁剪框
-                wx.getImageInfo({
-                  src: originalPath,
-                  success: (info) => {
-                    console.log('原始图片信息:', info);
-                    const defaultWidth = info.width; // 使用原始宽度
-                    const defaultHeight = Math.floor(defaultWidth * (9 / 16)); // 按16:9计算高度
-                    that.setData({
-                      showCropper: true,
-                      originalPath: originalPath,
-                      cropperWidth: defaultWidth,
-                      cropperHeight: defaultHeight
-                    });
-                    wx.showToast({ title: '请调整裁剪框后确认（默认16:9）', icon: 'none' });
-                    // 再次尝试初始化组件
-                    if (!that.cropper) {
-                      that.initCropper();
-                    }
-                  },
-                  fail: (err) => {
-                    console.error('获取图片信息失败:', err);
-                    wx.showToast({ title: '获取图片信息失败，请重试', icon: 'none' });
-                  }
+        // 验证图片路径
+        wx.getFileSystemManager().access({
+          path: originalPath,
+          success: () => {
+            // 获取原始图片信息，设置裁剪框
+            wx.getImageInfo({
+              src: originalPath,
+              success: (info) => {
+                console.log('原始图片信息:', info);
+                const defaultWidth = info.width; // 使用原始宽度
+                const defaultHeight = Math.floor(defaultWidth * (9 / 16)); // 按16:9计算高度
+                that.setData({
+                  showCropper: true,
+                  originalPath: originalPath,
+                  cropperWidth: defaultWidth,
+                  cropperHeight: defaultHeight
                 });
+                wx.showToast({ title: '请调整裁剪框后确认（默认16:9）', icon: 'none' });
+                // 再次尝试初始化组件
+                if (!that.cropper) {
+                  that.initCropper();
+                }
               },
               fail: (err) => {
-                console.error('图片路径无效:', err);
-                wx.showToast({ title: '图片路径无效，请重新拍照', icon: 'none' });
+                console.error('获取图片信息失败:', err);
+                wx.showToast({ title: '获取图片信息失败，请重试', icon: 'none' });
               }
             });
           },
           fail: (err) => {
-            if (err.errMsg.includes('cancel')) {
-              wx.showToast({ title: '已取消拍照', icon: 'none' });
-            } else {
-              wx.showToast({ title: '拍照失败，请重试', icon: 'none' });
-              console.error('拍照失败:', err);
-            }
+            console.error('图片路径无效:', err);
+            wx.showToast({ title: '图片路径无效，请重新拍照', icon: 'none' });
           }
         });
       },
-      fail() {
-        wx.showToast({ title: '请先授权摄像头权限', icon: 'none' });
-        setTimeout(() => {
-          wx.openSetting({
-            success: (settingRes) => {
-              if (!settingRes.authSetting['scope.camera']) {
-                wx.showToast({ title: '未授权摄像头，无法拍照', icon: 'none' });
-              }
-            }
-          });
-        }, 1500);
+      fail: (err) => {
+        if (err.errMsg.includes('cancel')) {
+          wx.showToast({ title: '已取消拍照', icon: 'none' });
+        } else {
+          wx.showToast({ title: '拍照失败，请重试', icon: 'none' });
+          console.error('拍照失败:', err);
+        }
       }
     });
   },
@@ -252,7 +234,7 @@ Page({
     });
   },
 
-  // 上传到云存储（添加用户验证）
+  // 上传到云存储
   uploadToCloud: function () {
     const { compressedPath } = this.data;
     if (!compressedPath) {
@@ -267,75 +249,65 @@ Page({
       return;
     }
 
-    // 检查用户登录状态
-    wx.getSetting({
+    // 检查网络状态
+    wx.getNetworkType({
       success: (res) => {
-        if (!res.authSetting['scope.userInfo']) {
-          wx.showToast({ title: '请先登录以上传图片', icon: 'none' });
-          wx.navigateTo({ url: '/pages/login/index' }); // 假设有登录页面
+        if (res.networkType === 'none') {
+          wx.showToast({ title: '无网络连接，请检查网络', icon: 'none' });
           return;
         }
 
-        // 检查网络状态
-        wx.getNetworkType({
-          success: (res) => {
-            if (res.networkType === 'none') {
-              wx.showToast({ title: '无网络连接，请检查网络', icon: 'none' });
-              return;
-            }
-
-            // 检查文件是否存在
-            wx.getFileSystemManager().access({
-              path: compressedPath,
-              success: () => {
-                wx.showLoading({ title: '正在上传...', mask: true });
-                wx.cloud.uploadFile({
-                  cloudPath: `wrong-questions/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`,
-                  filePath: compressedPath,
-                  success: (uploadRes) => {
-                    wx.hideLoading();
-                    console.log('上传成功，云文件ID:', uploadRes.fileID);
-                    wx.showToast({ title: '已成功存储到云端服务器', icon: 'success' });
-                    this.setData({
-                      thumbnail: '',
-                      compressedPath: ''
-                    });
-                  },
-                  fail: (err) => {
-                    wx.hideLoading();
-                    console.error('上传云存储失败:', err);
-                    if (err.errMsg.includes('INVALID_ENV')) {
-                      wx.showToast({ title: '云环境ID无效，请检查配置', icon: 'none', duration: 3000 });
-                    } else if (err.errMsg.includes('auth')) {
-                      wx.showToast({ title: '云存储权限不足，请检查权限设置', icon: 'none', duration: 3000 });
-                    } else if (err.errMsg.includes('network')) {
-                      wx.showToast({ title: '网络错误，请检查网络后重试', icon: 'none' });
-                    } else {
-                      wx.showToast({ title: '上传失败，请稍后重试', icon: 'none' });
-                    }
-                  }
+        // 检查文件是否存在
+        wx.getFileSystemManager().access({
+          path: compressedPath,
+          success: () => {
+            wx.showLoading({ title: '正在上传...', mask: true });
+            wx.cloud.uploadFile({
+              cloudPath: `wrong-questions/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`,
+              filePath: compressedPath,
+              success: (uploadRes) => {
+                wx.hideLoading();
+                console.log('上传成功，云文件ID:', uploadRes.fileID);
+                wx.showToast({ title: '已成功存储到云端服务器', icon: 'success' });
+                this.setData({
+                  thumbnail: '',
+                  compressedPath: ''
                 });
               },
               fail: (err) => {
-                console.error('文件访问失败:', err);
-                wx.showToast({ title: '图片文件不可用，请重新拍照', icon: 'none' });
+                wx.hideLoading();
+                console.error('上传云存储失败:', err);
+                if (err.errMsg.includes('INVALID_ENV')) {
+                  wx.showToast({ title: '云环境ID无效，请检查配置', icon: 'none', duration: 3000 });
+                } else if (err.errMsg.includes('auth')) {
+                  wx.showToast({ title: '云存储权限不足，请检查权限设置', icon: 'none', duration: 3000 });
+                } else if (err.errMsg.includes('network')) {
+                  wx.showToast({ title: '网络错误，请检查网络后重试', icon: 'none' });
+                } else {
+                  wx.showToast({ title: '上传失败，请稍后重试', icon: 'none' });
+                }
               }
             });
           },
           fail: (err) => {
-            console.error('网络检查失败:', err);
-            wx.showToast({ title: '网络状态异常，请检查网络', icon: 'none' });
+            console.error('文件访问失败:', err);
+            wx.showToast({ title: '图片文件不可用，请重新拍照', icon: 'none' });
           }
         });
+      },
+      fail: (err) => {
+        console.error('网络检查失败:', err);
+        wx.showToast({ title: '网络状态异常，请检查网络', icon: 'none' });
       }
     });
   }
 });
 
 // 说明：
-// 1. 修复初始化：增加1.5秒延迟初始化（onLoad），并在onReady和cropperload中再次尝试。
-// 2. 裁剪框：默认16:9（宽度=原始宽度，如887px；高度=宽度*9/16，如498px），移除lock_ratio，用户可自由调整。
-// 3. 修复确认触发：在confirmCrop中验证this.cropper，添加日志，失败时回退压缩。
-// 4. 修复全黑：提高quality至50，验证路径有效性。
-// 5. 体积：保持~12.5KB，quality可调至40-60。
-// 6. 安全性：移除index.js中的wx.cloud.init，使用envList.js；uploadToCloud添加用户验证。
+/* 1. 修复初始化：增加1.5秒延迟初始化（onLoad），并在onReady和cropperload中再次尝试。
+2. 裁剪框：默认宽度=原始宽度，高度=宽度*9/16（16:9），移除lock_ratio，用户可自由调整。
+3. 修复确认触发：在confirmCrop中验证this.cropper，添加日志，失败时回退压缩。
+4. 修复全黑：提高quality至50，验证路径有效性。
+5. 体积：保持~12.5KB，quality可调至40-60。
+6. 云环境：使用cloud1-7gugkxzh24b665f4。
+*/
