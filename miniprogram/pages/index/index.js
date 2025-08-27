@@ -46,6 +46,17 @@ Page({
               maxWidth: info.width, // 允许拖拽至100%
               maxHeight: info.height
             });
+            // 延迟初始化裁剪组件
+            setTimeout(() => {
+              const cropper = that.selectComponent('#image-cropper');
+              if (!cropper) {
+                console.error('裁剪组件加载失败');
+                wx.showToast({ title: '裁剪组件加载失败', icon: 'none' });
+                that.setData({ showCropper: false });
+              } else {
+                console.log('裁剪组件加载成功');
+              }
+            }, 1000); // 1秒延迟
           },
           fail(err) {
             console.error('获取图片信息失败:', err);
