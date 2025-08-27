@@ -87,8 +87,7 @@ Page({
                     that.setData({ showCropper: false, errorMessage: '裁剪组件加载失败' });
                     wx.showToast({ title: '裁剪组件加载失败', icon: 'none' });
                   } else {
-                    console.log('裁剪组件加载成功');
-                    cropper.loadImage(); // 手动触发图片加载
+                    console.log('裁剪组件加载成功, src:', originalPath);
                   }
                 }, 1000); // 1秒延迟
               },
