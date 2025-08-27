@@ -2,21 +2,25 @@
   <!-- 拍照按钮 -->
   <button bindtap="takePhoto" class="btn-take">📸 拍照录入错题</button>
 
-  <!-- image-cropper 剪裁器 -->
+  <!-- 剪裁界面 -->
   <view wx:if="{{isCropperShow}}" class="cropper-container">
     <image-cropper
       id="imageCropper"
       src="{{src}}"
-      scale-number="{{1.5}}"
       cut="{{cutArea}}"
       bind:ok="onCropOk"
       bind:cancel="onCropCancel"
-    ></image-cropper>
+    />
+
+    <!-- 自定义操作按钮 -->
+    <view class="cropper-actions">
+      <button bindtap="onCancelClick" class="btn-cancel">取消</button>
+      <button bindtap="onOkClick" class="btn-ok">确定</button>
+    </view>
   </view>
 
-  <!-- 操作按钮 -->
+  <!-- 剪裁后操作 -->
   <view wx:if="{{!isCropperShow && src}}" class="action-buttons">
-    <button bindtap="confirmCrop" class="btn-confirm">✅ 使用剪裁结果</button>
     <button bindtap="uploadImage" class="btn-upload" disabled="{{!croppedImagePath}}">
       📤 上传到云端
     </button>
@@ -25,9 +29,6 @@
 
   <!-- 加载提示 -->
   <view wx:if="{{loading}}" class="loading-mask">
-    <view class="loading-toast">
-      <loading />
-      <text>{{loadingText}}</text>
-    </view>
+    <view class="loading-toast">{{loadingText}}</view>
   </view>
 </view>
