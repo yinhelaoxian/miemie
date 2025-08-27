@@ -1,30 +1,10 @@
-<view class="container">
-  <button bindtap="takePhoto" class="btn-take">📸 拍照录入错题</button>
+<!-- 拍照按钮 -->
+<button bindtap="takePhoto">拍照录入错题</button>
 
-  <view wx:if="{{showCropper}}" class="cropper-wrapper">
-    <image-cropper
-      id="image-cropper"
-      src="{{originalPath}}"
-      init_width="{{cropperWidth}}"
-      init_height="{{cropperHeight}}"
-      min_width="{{50}}"
-      max_width="{{maxWidth}}"
-      max_height="{{maxHeight}}"
-      lock_width="{{false}}"
-      lock_ratio="{{false}}"
-      bind:ok="confirmCrop"
-      bind:loadimage="loadimage"
-    />
-  </view>
-
-  <view wx:if="{{croppedImagePath}}" class="result">
-    <image src="{{croppedImagePath}}" mode="widthFix" class="result-img"/>
-    <view class="result-tip">✅ 已上传</view>
-  </view>
-
-  <view wx:if="{{loading}}" class="loading-mask">
-    <view class="loading-toast">{{loadingText}}</view>
-  </view>
-
-  <view wx:if="{{errorMessage}}" class="error-message">{{errorMessage}}</view>
-</view>
+<!-- 剪裁组件（假设为image-cropper） -->
+<image-cropper
+  wx:if="{{showCropper}}"
+  src="{{cropperSrc}}"
+  bind:confirm="onCropConfirm"
+  bind:cancel="showCropper = false"
+/>
