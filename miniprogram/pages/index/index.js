@@ -55,6 +55,7 @@ Page({
                 that.setData({ showCropper: false });
               } else {
                 console.log('裁剪组件加载成功');
+                cropper.loadImage(); // 手动触发图片加载
               }
             }, 1000); // 1秒延迟
           },
@@ -69,6 +70,15 @@ Page({
         wx.showToast({ title: '拍照失败', icon: 'error' });
       }
     });
+  },
+
+  loadimage(e) {
+    console.log('图片加载完成:', e.detail);
+    if (!e.detail.width || !e.detail.height) {
+      console.error('图片加载失败:', e.detail.errMsg);
+      wx.showToast({ title: '图片加载失败', icon: 'none' });
+      this.setData({ showCropper: false });
+    }
   },
 
   confirmCrop() {

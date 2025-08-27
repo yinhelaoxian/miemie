@@ -13,6 +13,7 @@
       lock_width="{{false}}"
       lock_ratio="{{false}}"
       bind:ok="confirmCrop"
+      bind:loadimage="loadimage"
     />
   </view>
 
