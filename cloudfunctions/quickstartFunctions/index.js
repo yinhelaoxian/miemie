@@ -5,7 +5,8 @@ Page({
     originalPath: '',
     cropperWidth: 300,
     cropperHeight: 169,
-    maxWidth: 0, // 图片最大宽度
+    maxWidth: 0,
+    maxHeight: 0,
     thumbnail: '',
     compressedPath: '',
     fileSize: 0
@@ -14,7 +15,7 @@ Page({
   onLoad: function () {
     setTimeout(() => {
       this.initCropper();
-    }, 4000); // 延长至4秒
+    }, 7000); // 延长至7秒
   },
 
   onReady: function () {
@@ -59,9 +60,10 @@ Page({
                       originalPath: originalPath,
                       cropperWidth: defaultWidth,
                       cropperHeight: defaultHeight,
-                      maxWidth: info.width // 允许拖拽至100%
+                      maxWidth: info.width, // 允许拖拽至100%
+                      maxHeight: info.height
                     });
-                    wx.showToast({ title: '请拖动或缩放裁剪框（可达图片全宽）', icon: 'none' });
+                    wx.showToast({ title: '拖动或缩放裁剪框，可达图片全宽', icon: 'none', duration: 3000 });
                     if (!that.cropper) {
                       that.initCropper();
                     }
@@ -108,6 +110,11 @@ Page({
     if (!this.cropper) {
       this.initCropper();
     }
+    // 重置裁剪框大小
+    if (this.cropper && this.data.cropperWidth && this.data.cropperHeight) {
+      this.cropper.setWidth(this.data.cropperWidth);
+      this.cropper.setHeight(this.data.cropperHeight);
+    }
   },
 
   loadimage: function (e) {
@@ -115,6 +122,9 @@ Page({
     wx.hideLoading();
     if (this.cropper) {
       this.cropper.imgReset();
+      // 确保裁剪框初始大小为90%
+      this.cropper.setWidth(this.data.cropperWidth);
+      this.cropper.setHeight(this.data.cropperHeight);
     } else {
       console.error('裁剪组件未初始化，将直接压缩');
       wx.showToast({ title: '裁剪组件未初始化，将直接压缩', icon: 'none', duration: 3000 });
@@ -145,8 +155,8 @@ Page({
           src: croppedPath,
           success: (info) => {
             console.log('裁剪图片信息:', info);
-            // 缩放至最大宽度600px
-            const maxWidth = 600;
+            // 缩放至最大宽度350px
+            const maxWidth = 350;
             const scale = maxWidth / info.width;
             const canvasWidth = Math.min(info.width, maxWidth);
             const canvasHeight = Math.floor(info.height * scale);
@@ -155,7 +165,7 @@ Page({
               wx.canvasToTempFilePath({
                 canvasId: 'tempCanvas',
                 fileType: 'jpg',
-                quality: 0.3, // 目标~12.5KB
+                quality: 0.08, // 更低质量，目标~12.5KB
                 success: (canvasRes) => {
                   const compressedPath = canvasRes.tempFilePath;
                   console.log('JPEG压缩成功，压缩路径:', compressedPath);
@@ -215,7 +225,7 @@ Page({
     wx.getImageInfo({
       src: originalPath,
       success: (info) => {
-        const maxWidth = 600;
+        const maxWidth = 350;
         const scale = maxWidth / info.width;
         const canvasWidth = Math.min(info.width, maxWidth);
         const canvasHeight = Math.floor(info.height * scale);
@@ -225,7 +235,7 @@ Page({
           wx.canvasToTempFilePath({
             canvasId: 'tempCanvas',
             fileType: 'jpg',
-            quality: 0.2,
+            quality: 0.05, // 最低质量
             success: (canvasRes) => {
               const compressedPath = canvasRes.tempFilePath;
               console.log('回退压缩成功，压缩路径:', compressedPath);
