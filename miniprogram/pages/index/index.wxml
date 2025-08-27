@@ -1,43 +1,30 @@
-<!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
   <button bindtap="takePhoto" class="btn-take">📸 拍照录入错题</button>
 
-  <!-- 剪裁界面 -->
-  <view wx:if="{{isCropperShow}}" class="cropper-wrapper">
+  <view wx:if="{{showCropper}}" class="cropper-wrapper">
     <image-cropper
-      id="imageCropper"
-      src="{{src}}"
-      cut="{{cutArea}}"
+      id="image-cropper"
+      src="{{originalPath}}"
+      init_width="{{cropperWidth}}"
+      init_height="{{cropperHeight}}"
       min_width="{{50}}"
       max_width="{{maxWidth}}"
       max_height="{{maxHeight}}"
       lock_width="{{false}}"
       lock_ratio="{{false}}"
-      bind:ok="onCropOk"
-      bind:cancel="onCropCancel"
+      bind:ok="confirmCrop"
     />
     <view class="cropper-actions">
-      <button bindtap="onCancelClick" class="btn-cancel">取消</button>
-      <!-- 移除无效的 onOkClick，依赖组件内部确定按钮 -->
+      <button bindtap="takePhoto" class="btn-cancel">取消</button>
     </view>
   </view>
 
-  <!-- 其他操作 -->
-  <view wx:if="{{!isCropperShow && src}}" class="action-buttons">
-    <button bindtap="uploadImage" class="btn-upload" disabled="{{!croppedImagePath}}">
-      📤 上传到云端
-    </button>
-    <button bindtap="reTake" class="btn-retake">🔁 重新拍照</button>
+  <view wx:if="{{croppedImagePath}}" class="result">
+    <image src="{{croppedImagePath}}" mode="widthFix" class="result-img"/>
+    <view class="result-tip">✅ 已上传</view>
   </view>
 
-  <!-- 加载提示 -->
   <view wx:if="{{loading}}" class="loading-mask">
     <view class="loading-toast">{{loadingText}}</view>
-  </view>
-
-  <!-- 预览区域 -->
-  <view wx:if="{{thumbnail}}" class="preview-container">
-    <image src="{{thumbnail}}" mode="widthFix" class="preview-img" bindtap="previewImage"/>
-    <view class="preview-tip">✅ 已上传至云端</view>
   </view>
 </view>
