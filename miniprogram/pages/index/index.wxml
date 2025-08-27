@@ -1,25 +1,28 @@
+<!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
-  <!-- 拍照按钮 -->
   <button bindtap="takePhoto" class="btn-take">📸 拍照录入错题</button>
 
   <!-- 剪裁界面 -->
-  <view wx:if="{{isCropperShow}}" class="cropper-container">
+  <view wx:if="{{isCropperShow}}" class="cropper-wrapper">
     <image-cropper
       id="imageCropper"
       src="{{src}}"
       cut="{{cutArea}}"
+      min_width="{{50}}"
+      max_width="{{maxWidth}}"
+      max_height="{{maxHeight}}"
+      lock_width="{{false}}"
+      lock_ratio="{{false}}"
       bind:ok="onCropOk"
       bind:cancel="onCropCancel"
     />
-
-    <!-- 自定义操作按钮 -->
     <view class="cropper-actions">
       <button bindtap="onCancelClick" class="btn-cancel">取消</button>
-      <button bindtap="onOkClick" class="btn-ok">确定</button>
+      <!-- 移除无效的 onOkClick，依赖组件内部确定按钮 -->
     </view>
   </view>
 
-  <!-- 剪裁后操作 -->
+  <!-- 其他操作 -->
   <view wx:if="{{!isCropperShow && src}}" class="action-buttons">
     <button bindtap="uploadImage" class="btn-upload" disabled="{{!croppedImagePath}}">
       📤 上传到云端
@@ -30,5 +33,11 @@
   <!-- 加载提示 -->
   <view wx:if="{{loading}}" class="loading-mask">
     <view class="loading-toast">{{loadingText}}</view>
+  </view>
+
+  <!-- 预览区域 -->
+  <view wx:if="{{thumbnail}}" class="preview-container">
+    <image src="{{thumbnail}}" mode="widthFix" class="preview-img" bindtap="previewImage"/>
+    <view class="preview-tip">✅ 已上传至云端</view>
   </view>
 </view>
