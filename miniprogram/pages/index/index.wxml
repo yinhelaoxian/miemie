@@ -25,4 +25,6 @@
   <view wx:if="{{loading}}" class="loading-mask">
     <view class="loading-toast">{{loadingText}}</view>
   </view>
+
+  <view wx:if="{{errorMessage}}" class="error-message">{{errorMessage}}</view>
 </view>

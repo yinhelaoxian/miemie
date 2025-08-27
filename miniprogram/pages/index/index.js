@@ -8,7 +8,8 @@ Page({
     maxWidth: 0,
     maxHeight: 0,
     croppedImagePath: '',
-    loading: false
+    loading: false,
+    errorMessage: ''
   },
 
   onLoad() {
@@ -21,53 +22,89 @@ Page({
       env: envId,
       traceUser: true
     });
+    // 检查摄像头权限
+    wx.getSetting({
+      success(res) {
+        if (!res.authSetting['scope.camera']) {
+          wx.authorize({
+            scope: 'scope.camera',
+            success() {
+              console.log('摄像头权限已授权');
+            },
+            fail() {
+              console.error('摄像头权限未授权');
+              wx.showModal({
+                title: '提示',
+                content: '需要摄像头权限，请在设置中授权',
+                success(res) {
+                  if (res.confirm) {
+                    wx.openSetting();
+                  }
+                }
+              });
+            }
+          });
+        }
+      }
+    });
   },
 
   takePhoto() {
     const that = this;
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['camera'],
-      camera: 'back',
+    wx.getSetting({
       success(res) {
-        const originalPath = res.tempFiles[0].tempFilePath;
-        console.log('拍照成功，原图路径:', originalPath);
-        wx.getImageInfo({
-          src: originalPath,
-          success(info) {
-            const defaultWidth = Math.floor(info.width * 0.9); // 默认90%
-            const defaultHeight = Math.floor(defaultWidth * (info.height / info.width)); // 保持比例
-            that.setData({
-              showCropper: true,
-              originalPath: originalPath,
-              cropperWidth: defaultWidth,
-              cropperHeight: defaultHeight,
-              maxWidth: info.width, // 允许拖拽至100%
-              maxHeight: info.height
-            });
-            // 延迟初始化裁剪组件
-            setTimeout(() => {
-              const cropper = that.selectComponent('#image-cropper');
-              if (!cropper) {
-                console.error('裁剪组件加载失败');
-                wx.showToast({ title: '裁剪组件加载失败', icon: 'none' });
-                that.setData({ showCropper: false });
-              } else {
-                console.log('裁剪组件加载成功');
-                cropper.loadImage(); // 手动触发图片加载
+        if (!res.authSetting['scope.camera']) {
+          wx.showToast({ title: '请授权摄像头权限', icon: 'none' });
+          return;
+        }
+        wx.chooseMedia({
+          count: 1,
+          mediaType: ['image'],
+          sourceType: ['camera'],
+          camera: 'back',
+          success(res) {
+            const originalPath = res.tempFiles[0].tempFilePath;
+            console.log('拍照成功，原图路径:', originalPath);
+            wx.getImageInfo({
+              src: originalPath,
+              success(info) {
+                const defaultWidth = Math.floor(info.width * 0.9); // 默认90%
+                const defaultHeight = Math.floor(defaultWidth * (info.height / info.width)); // 保持比例
+                that.setData({
+                  showCropper: true,
+                  originalPath: originalPath,
+                  cropperWidth: defaultWidth,
+                  cropperHeight: defaultHeight,
+                  maxWidth: info.width, // 允许拖拽至100%
+                  maxHeight: info.height,
+                  errorMessage: ''
+                });
+                // 延迟初始化裁剪组件
+                setTimeout(() => {
+                  const cropper = that.selectComponent('#image-cropper');
+                  if (!cropper) {
+                    console.error('裁剪组件加载失败');
+                    that.setData({ showCropper: false, errorMessage: '裁剪组件加载失败' });
+                    wx.showToast({ title: '裁剪组件加载失败', icon: 'none' });
+                  } else {
+                    console.log('裁剪组件加载成功');
+                    cropper.loadImage(); // 手动触发图片加载
+                  }
+                }, 1000); // 1秒延迟
+              },
+              fail(err) {
+                console.error('获取图片信息失败:', err);
+                that.setData({ showCropper: false, errorMessage: '获取图片信息失败' });
+                wx.showToast({ title: '获取图片信息失败', icon: 'none' });
               }
-            }, 1000); // 1秒延迟
+            });
           },
           fail(err) {
-            console.error('获取图片信息失败:', err);
-            wx.showToast({ title: '获取图片信息失败', icon: 'none' });
+            console.error('拍照失败:', err);
+            that.setData({ errorMessage: '拍照失败' });
+            wx.showToast({ title: '拍照失败', icon: 'error' });
           }
         });
-      },
-      fail(err) {
-        console.error('拍照失败:', err);
-        wx.showToast({ title: '拍照失败', icon: 'error' });
       }
     });
   },
@@ -76,8 +113,8 @@ Page({
     console.log('图片加载完成:', e.detail);
     if (!e.detail.width || !e.detail.height) {
       console.error('图片加载失败:', e.detail.errMsg);
+      this.setData({ showCropper: false, errorMessage: '图片加载失败' });
       wx.showToast({ title: '图片加载失败', icon: 'none' });
-      this.setData({ showCropper: false });
     }
   },
 

@@ -4,19 +4,18 @@
   ],
   "permission": {
     "scope.camera": {
-      "desc": "用于拍照录入错题，获取题目图片" 
+      "desc": "需要使用您的摄像头进行拍照" 
     }
   },
   "window": {
     "backgroundColor": "#F6F6F6",
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#F6F6F6",
-    "navigationBarTitleText": "appjson-",
+    "navigationBarTitleText": "app-json-",
     "navigationBarTextStyle": "black"
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
-  "requiredBackgroundModes": [],
-  "usingComponents": {}
+  "requiredBackgroundModes": []
 }

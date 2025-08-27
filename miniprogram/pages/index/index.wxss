@@ -22,7 +22,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.9); /* 改为半透明白色，避免全黑 */
+  background: rgba(255, 255, 255, 0.9); /* 半透明白色，避免全黑 */
   z-index: 999;
   display: flex;
   flex-direction: column;
@@ -65,4 +65,11 @@
   border-radius: 16rpx;
   font-size: 30rpx;
   color: #333;
+}
+
+.error-message {
+  color: #f43f3f;
+  font-size: 28rpx;
+  margin-top: 20rpx;
+  text-align: center;
 }
