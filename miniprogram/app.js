@@ -3,7 +3,8 @@ const { envId } = require('./envList.js');
 App({
   onLaunch: function () {
     wx.cloud.init({
-      env: envId
+      env: envId,
+      traceUser: true
     });
   }
 });
