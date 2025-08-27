@@ -73,56 +73,63 @@ Page({
       if (res.url) {
         const croppedPath = res.url;
         console.log('裁剪后图片路径:', croppedPath);
+        that.compressImage(croppedPath);
+      } else {
+        wx.showToast({ title: '裁剪失败', icon: 'none' });
+        this.setData({ loading: false });
+      }
+    });
+  },
 
-        const ctx = wx.createCanvasContext('tempCanvas', this);
+  compressImage(croppedPath) {
+    const that = this;
+    wx.getImageInfo({
+      src: croppedPath,
+      success(info) {
+        const maxWidth = 250;
+        const scale = maxWidth / info.width;
+        const canvasWidth = Math.min(info.width, maxWidth);
+        const canvasHeight = Math.floor(info.height * scale);
+
+        const ctx = wx.createCanvasContext('tempCanvas', that);
         ctx.fillStyle = 'white'; // 避免全黑
-        ctx.fillRect(0, 0, 250, 250);
-        wx.getImageInfo({
-          src: croppedPath,
-          success(info) {
-            const maxWidth = 250;
-            const scale = maxWidth / info.width;
-            const canvasWidth = Math.min(info.width, maxWidth);
-            const canvasHeight = Math.floor(info.height * scale);
-            ctx.drawImage(croppedPath, 0, 0, canvasWidth, canvasHeight);
-            ctx.draw(false, () => {
-              wx.canvasToTempFilePath({
-                canvasId: 'tempCanvas',
-                fileType: 'jpg',
-                quality: 0.6, // 初始质量
-                success(canvasRes) {
-                  const compressedPath = canvasRes.tempFilePath;
-                  wx.getFileSystemManager().stat({
-                    path: compressedPath,
-                    success(statRes) {
-                      const fileSize = Math.round(statRes.size / 1024);
-                      console.log('压缩图片大小:', fileSize, 'KB');
-                      if (fileSize > 20) {
-                        that.compressWithLowerQuality(croppedPath);
-                      } else {
-                        that.uploadToCloud(compressedPath);
-                      }
-                    },
-                    fail(err) {
-                      console.error('获取文件大小失败:', err);
-                      that.compressWithFallback(croppedPath);
-                    }
-                  });
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.drawImage(croppedPath, 0, 0, canvasWidth, canvasHeight);
+        ctx.draw(false, () => {
+          wx.canvasToTempFilePath({
+            canvasId: 'tempCanvas',
+            fileType: 'jpg',
+            quality: 0.6, // 初始质量
+            success(canvasRes) {
+              const compressedPath = canvasRes.tempFilePath;
+              wx.getFileSystemManager().stat({
+                path: compressedPath,
+                success(statRes) {
+                  const fileSize = Math.round(statRes.size / 1024);
+                  console.log('压缩图片大小:', fileSize, 'KB');
+                  if (fileSize > 20) {
+                    that.compressWithLowerQuality(croppedPath);
+                  } else {
+                    that.uploadToCloud(compressedPath);
+                  }
                 },
                 fail(err) {
-                  console.error('canvas压缩失败:', err);
+                  console.error('获取文件大小失败:', err);
                   that.compressWithFallback(croppedPath);
                 }
               });
-            });
-          },
-          fail(err) {
-            console.error('获取裁剪图片信息失败:', err);
-            wx.showToast({ title: '裁剪失败', icon: 'none' });
-          }
+            },
+            fail(err) {
+              console.error('canvas压缩失败:', err);
+              that.compressWithFallback(croppedPath);
+            }
+          });
         });
-      } else {
-        wx.showToast({ title: '裁剪失败', icon: 'none' });
+      },
+      fail(err) {
+        console.error('获取裁剪图片信息失败:', err);
+        wx.showToast({ title: '压缩失败', icon: 'none' });
+        that.setData({ loading: false });
       }
     });
   },
@@ -170,7 +177,7 @@ Page({
         this.setData({ loading: false });
         wx.showToast({ title: '压缩失败', icon: 'error' });
       }
-    });
+    }.bind(this));
   },
 
   uploadToCloud(compressedPath) {

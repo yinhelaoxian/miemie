@@ -14,9 +14,6 @@
       lock_ratio="{{false}}"
       bind:ok="confirmCrop"
     />
-    <view class="cropper-actions">
-      <button bindtap="takePhoto" class="btn-cancel">取消</button>
-    </view>
   </view>
 
   <view wx:if="{{croppedImagePath}}" class="result">
