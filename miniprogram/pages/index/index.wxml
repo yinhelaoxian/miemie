@@ -1,45 +1,33 @@
-<!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
-  <view class="title">咩咩错题</view>
-  
   <!-- 拍照按钮 -->
-  <button class="take-photo-btn" bindtap="takePhoto">拍照录入错题</button>
-  
-  <!-- 裁剪界面 -->
-  <view class="cropper-container" wx:if="{{showCropper}}">
-    <image-cropper 
-      id="image-cropper" 
-      limit_move="{{false}}" 
-      disable_rotate="{{true}}" 
-      scale_ratio="{{0.5}}" 
-      init_width="{{cropperWidth}}" 
-      init_height="{{cropperHeight}}" 
-      min_width="{{50}}" 
-      max_width="{{maxWidth}}" 
-      max_height="{{maxHeight}}" 
-      lock_width="{{false}}" 
-      lock_ratio="{{false}}" 
-      imgSrc="{{originalPath}}" 
-      bind:load="cropperload" 
-      bind:imageload="loadimage"
+  <button bindtap="takePhoto" class="btn-take">📸 拍照录入错题</button>
+
+  <!-- image-cropper 剪裁器 -->
+  <view wx:if="{{isCropperShow}}" class="cropper-container">
+    <image-cropper
+      id="imageCropper"
+      src="{{src}}"
+      scale-number="{{1.5}}"
+      cut="{{cutArea}}"
+      bind:ok="onCropOk"
+      bind:cancel="onCropCancel"
     ></image-cropper>
-    <view class="crop-tip">拖动或缩放调整裁剪框（可达图片全宽）</view>
-    <button class="confirm-btn" bindtap="confirmCrop">确认裁剪</button>
   </view>
-  
-  <!-- 预览区域 -->
-  <view class="preview-container" wx:if="{{thumbnail}}">
-    <view class="preview-title">错题图片预览（已裁剪压缩，{{fileSize}}KB）</view>
-    <image 
-      class="preview-img" 
-      src="{{thumbnail}}" 
-      mode="widthFix" 
-      bindtap="previewImage"
-    />
-    <view class="temp-storage-tip">✅ 图片已保存至微信临时存储</view>
-    <button class="upload-btn" bindtap="uploadToCloud">存储到云端服务器</button>
+
+  <!-- 操作按钮 -->
+  <view wx:if="{{!isCropperShow && src}}" class="action-buttons">
+    <button bindtap="confirmCrop" class="btn-confirm">✅ 使用剪裁结果</button>
+    <button bindtap="uploadImage" class="btn-upload" disabled="{{!croppedImagePath}}">
+      📤 上传到云端
+    </button>
+    <button bindtap="reTake" class="btn-retake">🔁 重新拍照</button>
   </view>
-  
-  <!-- 隐藏canvas用于JPEG压缩 -->
-  <canvas canvas-id="tempCanvas" style="display: none;"></canvas>
+
+  <!-- 加载提示 -->
+  <view wx:if="{{loading}}" class="loading-mask">
+    <view class="loading-toast">
+      <loading />
+      <text>{{loadingText}}</text>
+    </view>
+  </view>
 </view>
