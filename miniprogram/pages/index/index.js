@@ -1,5 +1,5 @@
 Page({
-  {
+  data:{
    src: '', // 原图路径
    croppedImagePath: '', // 剪裁结果
    isCropperShow: false, // 是否显示剪裁器
