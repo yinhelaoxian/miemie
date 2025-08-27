@@ -1,10 +1,16 @@
-<!-- 拍照按钮 -->
-<button bindtap="takePhoto">拍照录入错题</button>
-
-<!-- 剪裁组件（假设为image-cropper） -->
-<image-cropper
-  wx:if="{{showCropper}}"
-  src="{{cropperSrc}}"
-  bind:confirm="onCropConfirm"
-  bind:cancel="showCropper = false"
-/>
+<view>
+  <button bindtap="takePhoto">拍照录入错题</button>
+  <image-cropper
+    id="image-cropper"
+    limit_move="{{true}}"
+    disable_rotate="{{true}}"
+    width="{{cropperWidth}}"
+    height="{{cropperHeight}}"
+    imgSrc="{{imageSrc}}"
+    img_width="{{imgWidth}}"
+    bindload="cropperload"
+    bindimageload="loadimage"
+    bindtapcut="clickcut"
+  ></image-cropper>
+  <button bindtap="getCroppedImage">确认剪裁</button>
+</view>

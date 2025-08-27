@@ -1,61 +1,91 @@
-
 Page({
- data: {
-   src: '', // 原始图片路径
-   cropperSrc: '', // 剪裁组件专用路径
-   uploadedUrl: '' // 上传后的云存储URL
- },
+  data: {
+    imageSrc: '', // 拍照后的图片路径
+    cropperWidth: 250, // 裁剪框宽度
+    cropperHeight: 250, // 裁剪框高度
+    imgWidth: 0, // 图片宽度（设置为实际宽度的90%）
+  },
 
- // 拍照（改用chooseMedia）
- takePhoto() {
-   wx.chooseMedia({
-     count: 1,
-     mediaType: ['image'],
-     sourceType: ['camera', 'album'],
-     success: (res) => {
-       const tempFilePath = res.tempFiles[0].tempFilePath;
-       this.setData({ 
-         src: tempFilePath,
-         cropperSrc: tempFilePath 
-       });
-       // 跳转到剪裁页面（或通过组件渲染）
-       this.startCrop();
-     },
-     fail: () => wx.showToast({ title: '拍照失败', icon: 'error' })
-   });
- },
+  // 拍照
+  takePhoto() {
+    wx.chooseImage({
+      count: 1,
+      sourceType: ['camera'],
+      success: res => {
+        this.setData({
+          imageSrc: res.tempFilePaths[0]
+        });
+        wx.showLoading({
+          title: '加载中'
+        });
+      },
+      fail: err => {
+        wx.showToast({ title: '拍照失败', icon: 'none' });
+      }
+    });
+  },
 
- // 启动剪裁（假设使用image-cropper组件）
- startCrop() {
-   // 渲染剪裁组件（具体实现取决于image-cropper的API）
-   this.setData({ showCropper: true });
- },
+  // 裁剪控件初始化完成
+  cropperload(e) {
+    console.log('cropper 初始化完成');
+    this.cropper = this.selectComponent('#image-cropper');
+  },
 
- // 获取剪裁结果并上传
- onCropConfirm(e) {
-   const { tempFilePath } = e.detail;
-   this.compressAndUpload(tempFilePath);
- },
+  // 图片加载完成
+  loadimage(e) {
+    console.log('图片加载完成', e.detail);
+    const { width } = e.detail; // 获取图片实际宽度
+    this.setData({
+      imgWidth: width * 0.9, // 设置图片宽度为实际宽度的90%
+      cropperWidth: width * 0.9 // 设置裁剪框宽度为图片宽度的90%
+    });
+    this.cropper.imgReset(); // 重置图片角度、缩放、位置
+    wx.hideLoading();
+  },
 
- // 压缩并上传
- compressAndUpload(filePath) {
-   wx.compressImage({
-     src: filePath,
-     quality: 80,
-     success: (res) => {
-       const cloudPath = `wrong_questions/${Date.now()}.jpg`;
-       wx.cloud.uploadFile({
-         cloudPath,
-         filePath: res.tempFilePath,
-         success: (uploadRes) => {
-           this.setData({ uploadedUrl: uploadRes.fileID });
-           wx.showToast({ title: '保存成功' });
-           // TODO: 保存题目信息到数据库
-         },
-         fail: () => wx.showToast({ title: '上传失败', icon: 'error' })
-       });
-     },
-     fail: () => wx.showToast({ title: '压缩失败', icon: 'error' })
-   });
- }
+  // 点击裁剪框预览图片
+  clickcut(e) {
+    console.log('裁剪框点击', e.detail);
+    wx.previewImage({
+      current: e.detail.url,
+      urls: [e.detail.url]
+    });
+  },
+
+  // 确认裁剪并获取图片
+  getCroppedImage() {
+    this.cropper.getImg(res => {
+      if (res.url) {
+        // 压缩图片
+        wx.compressImage({
+          src: res.url,
+          quality: 80, // 压缩质量
+          success: compressRes => {
+            this.uploadToCloud(compressRes.tempFilePath);
+          },
+          fail: err => {
+            wx.showToast({ title: '压缩失败', icon: 'none' });
+          }
+        });
+      } else {
+        wx.showToast({ title: '裁剪失败', icon: 'none' });
+      }
+    });
+  },
+
+  // 上传到腾讯云存储
+  uploadToCloud(filePath) {
+    wx.cloud.uploadFile({
+      cloudPath: `images/${Date.now()}.jpg`,
+      filePath: filePath,
+      success: res => {
+        console.log('上传成功', res.fileID);
+        wx.showToast({ title: '上传成功' });
+      },
+      fail: err => {
+        console.error('上传失败', err);
+        wx.showToast({ title: '上传失败', icon: 'none' });
+      }
+    });
+  }
 });
