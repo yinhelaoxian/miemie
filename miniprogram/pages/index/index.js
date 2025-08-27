@@ -2,12 +2,10 @@
 Page({
   data: {
     src: '',
-    croppedImagePath: '',
     isCropperShow: false,
-    cutArea: { x: 0, y: 0, width: 0, height: 0 },
+    croppedImagePath: '',
     loading: false,
-    loadingText: '处理中...',
-    fileSize: 0
+    loadingText: '处理中...'
   },
 
   onLoad() {
@@ -30,39 +28,13 @@ Page({
         sourceType: ['camera'],
         camera: 'back'
       });
-
       const tempFilePath = res.tempFiles[0].tempFilePath;
       console.log('拍照成功，原图路径:', tempFilePath);
-      this.setData({ src: tempFilePath });
-
-      const info = await this.getImageInfo(tempFilePath);
-      const { width, height } = info;
-
-      const defaultWidth = Math.floor(width * 0.9); // 默认90%
-      const defaultHeight = Math.floor(defaultWidth * (9 / 16)); // 初始16:9
-      const x = (width - defaultWidth) / 2;
-      const y = (height - defaultHeight) / 2;
-
-      this.setData({
-        cutArea: { x, y, width: defaultWidth, height: defaultHeight },
-        isCropperShow: true
-      });
-      wx.showToast({ title: '拖动或缩放裁剪框，可达图片全宽', icon: 'none', duration: 3000 });
+      this.setData({ src: tempFilePath, isCropperShow: true });
     } catch (err) {
       console.error('拍照失败:', err);
       wx.showToast({ title: '拍照失败', icon: 'error' });
     }
-  },
-
-  getImageInfo(src) {
-    return new Promise((resolve, reject) => {
-      wx.getImageInfo({ src, success: resolve, fail: reject });
-    });
-  },
-
-  onCancelClick() {
-    this.setData({ isCropperShow: false });
-    wx.showToast({ title: '取消裁剪' });
   },
 
   onCropOk(e) {
@@ -71,29 +43,17 @@ Page({
       wx.showToast({ title: '剪裁失败', icon: 'error' });
       return;
     }
-
     this.compressImage(path);
   },
 
   onCropCancel() {
     this.setData({ isCropperShow: false });
-    wx.showToast({ title: '取消裁剪' });
-  },
-
-  reTake() {
-    this.setData({
-      src: '',
-      croppedImagePath: '',
-      isCropperShow: false
-    });
   },
 
   async compressImage(croppedPath) {
-    const that = this;
-    wx.showLoading({ title: '压缩中...', mask: true });
-
+    this.setData({ loading: true, loadingText: '压缩中...' });
     try {
-      const info = await this.getImageInfo(croppedPath);
+      const info = await wx.getImageInfo({ src: croppedPath });
       const maxWidth = 250;
       const scale = maxWidth / info.width;
       const canvasWidth = Math.min(info.width, maxWidth);
@@ -105,133 +65,90 @@ Page({
         wx.canvasToTempFilePath({
           canvasId: 'tempCanvas',
           fileType: 'jpg',
-          quality: 0.4, // 初始质量，避免全黑
-          success: (canvasRes) => {
-            const compressedPath = canvasRes.tempFilePath;
+          quality: 0.6, // 初始质量，避免全黑
+          success: (res) => {
+            const compressedPath = res.tempFilePath;
             wx.getFileSystemManager().stat({
               path: compressedPath,
               success: (statRes) => {
-                const fileSize = Math.round(statRes.stat.size / 1024);
-                console.log('压缩图片大小:', fileSize, 'KB');
+                const fileSize = Math.round(statRes.size / 1024);
                 if (fileSize > 20) {
-                  that.compressWithLowerQuality(croppedPath);
+                  this.compressWithLowerQuality(compressedPath);
                 } else {
-                  that.setData({
-                    isCropperShow: false,
-                    croppedImagePath: compressedPath,
-                    fileSize: fileSize
-                  });
-                  wx.hideLoading();
-                  wx.showToast({ title: `剪裁压缩成功（${fileSize}KB）` });
+                  this.saveToCloud(compressedPath);
                 }
               },
               fail: (err) => {
                 console.error('获取文件大小失败:', err);
-                that.compressWithFallback(croppedPath);
+                this.compressWithFallback(compressedPath);
               }
             });
           },
           fail: (err) => {
             console.error('canvas压缩失败:', err);
-            that.compressWithFallback(croppedPath);
+            this.compressWithFallback(croppedPath);
           }
-        }, this);
+        });
       });
     } catch (err) {
       console.error('压缩处理失败:', err);
-      wx.hideLoading();
+      this.setData({ loading: false });
       wx.showToast({ title: '压缩失败', icon: 'error' });
     }
   },
 
   compressWithLowerQuality(croppedPath) {
-    const that = this;
     wx.canvasToTempFilePath({
       canvasId: 'tempCanvas',
       fileType: 'jpg',
-      quality: 0.3,
-      success: (canvasRes) => {
-        const compressedPath = canvasRes.tempFilePath;
-        wx.getFileSystemManager().stat({
-          path: compressedPath,
-          success: (statRes) => {
-            const fileSize = Math.round(statRes.stat.size / 1024);
-            console.log('二次压缩图片大小:', fileSize, 'KB');
-            if (fileSize > 20) {
-              that.compressWithFallback(croppedPath);
-            } else {
-              that.setData({
-                isCropperShow: false,
-                croppedImagePath: compressedPath,
-                fileSize: fileSize
-              });
-              wx.hideLoading();
-              wx.showToast({ title: `剪裁压缩成功（${fileSize}KB）` });
-            }
-          },
-          fail: (err) => {
-            console.error('获取文件大小失败:', err);
-            that.compressWithFallback(croppedPath);
-          }
-        });
-      },
-      fail: (err) => {
-        console.error('二次压缩失败:', err);
-        that.compressWithFallback(croppedPath);
-      }
-    }, this);
-  },
-
-  compressWithFallback(croppedPath) {
-    const that = this;
-    wx.compressImage({
-      src: croppedPath,
-      quality: 20, // 更低质量
+      quality: 0.4,
       success: (res) => {
         const compressedPath = res.tempFilePath;
         wx.getFileSystemManager().stat({
           path: compressedPath,
           success: (statRes) => {
-            const fileSize = Math.round(statRes.stat.size / 1024);
-            console.log('备用压缩图片大小:', fileSize, 'KB');
-            that.setData({
-              isCropperShow: false,
-              croppedImagePath: compressedPath,
-              fileSize: fileSize
-            });
-            wx.hideLoading();
-            wx.showToast({ title: `压缩成功（${fileSize}KB，备用方案）` });
+            const fileSize = Math.round(statRes.size / 1024);
+            if (fileSize > 20) {
+              this.compressWithFallback(croppedPath);
+            } else {
+              this.saveToCloud(compressedPath);
+            }
           },
           fail: (err) => {
             console.error('获取文件大小失败:', err);
-            that.setData({
-              isCropperShow: false,
-              croppedImagePath: compressedPath,
-              fileSize: 0
-            });
-            wx.hideLoading();
-            wx.showToast({ title: '压缩成功（备用方案）' });
+            this.compressWithFallback(croppedPath);
           }
         });
       },
       fail: (err) => {
+        console.error('二次压缩失败:', err);
+        this.compressWithFallback(croppedPath);
+      }
+    });
+  },
+
+  compressWithFallback(croppedPath) {
+    wx.compressImage({
+      src: croppedPath,
+      quality: 20,
+      success: (res) => {
+        const compressedPath = res.tempFilePath;
+        this.saveToCloud(compressedPath);
+      },
+      fail: (err) => {
         console.error('备用压缩失败:', err);
-        wx.hideLoading();
+        this.setData({ loading: false });
         wx.showToast({ title: '压缩失败', icon: 'error' });
       }
     });
   },
 
-  async uploadImage() {
-    if (!this.data.croppedImagePath) return;
-
-    this.setData({ loading: true, loadingText: '上传中...' });
-
+  async saveToCloud(compressedPath) {
     try {
-      const fileID = `error_questions/${Date.now()}.jpg`;
+      const fileID = `wrong-questions/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
       const uploadTask = await wx.cloud.uploadFile({
         cloudPath: fileID,
-        filePath: this.data.croppedImagePath
+        filePath: compressedPath
       });
 
       if (uploadTask.fileID) {
@@ -239,25 +156,15 @@ Page({
           fileList: [uploadTask.fileID]
         });
         const cloudUrl = urlRes.fileList[0].tempFileURL;
-        this.setData({ thumbnail: cloudUrl });
-        wx.showToast({ title: '上传成功' });
+        this.setData({ croppedImagePath: cloudUrl, isCropperShow: false });
+        wx.showToast({ title: '保存成功' });
         console.log('云端文件ID:', uploadTask.fileID);
       }
     } catch (err) {
-      console.error('上传失败:', err);
-      wx.showToast({ title: '上传失败', icon: 'error' });
+      console.error('保存到云端失败:', err);
+      wx.showToast({ title: '保存失败', icon: 'error' });
     } finally {
       this.setData({ loading: false });
     }
-  },
-
-  previewImage() {
-    const { croppedImagePath } = this.data;
-    if (!croppedImagePath) return;
-
-    wx.previewImage({
-      current: croppedImagePath,
-      urls: [croppedImagePath]
-    });
   }
 });
