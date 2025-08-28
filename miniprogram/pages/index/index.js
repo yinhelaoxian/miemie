@@ -128,7 +128,7 @@ Page({
   compressToTargetSize(src) {
     const targetMaxSize = 100 * 1024; // 100K
     const targetMinSize = 20 * 1024; // 20K
-    let quality = 60; // 初始质量
+    let quality = 50; // 降低初始质量
     let filePath = src;
     let compressCount = 0; // 压缩次数计数
     const maxCompressCount = 15; // 最大压缩次数
@@ -156,7 +156,7 @@ Page({
               return;
             }
 
-            if (size > targetMaxSize && quality > 30) {
+            if (size > targetMaxSize && quality > 20) {
               quality -= 5; // 减小步长
               filePath = compressedPath;
               compressCount++;
