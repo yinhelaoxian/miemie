@@ -1,4 +1,3 @@
-/* miniprogram/pages/index/index.wxss */
 .container {
   display: flex;
   flex-direction: column;
@@ -9,15 +8,16 @@
 }
 
 .cropper-container {
-  width: 95%; /* 稍微增大容器宽度，适应90%照片宽度 */
+  width: 95%;
   height: auto;
   position: relative;
-  margin: 15px auto 120px; /* 减小顶部边距，保持底部按钮空间 */
+  margin: 20px 15px 140px;
+  touch-action: auto;
 }
 
 image-cropper {
-  width: 100%; /* 裁剪框宽度占容器宽度 */
-  height: 400px;
+  width: 100%;
+  height: auto;
   background: transparent;
   position: relative;
   z-index: 10;
