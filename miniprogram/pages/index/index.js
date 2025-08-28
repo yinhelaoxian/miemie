@@ -13,7 +13,8 @@ Page({
     const { windowWidth, windowHeight } = wx.getSystemInfoSync();
     this.setData({
       cropperWidth: windowWidth * 0.9,
-      cropperHeight: windowHeight * 0.6
+      cropperHeight: windowHeight * 0.6,
+      showCropper: false // 确保初始不显示裁剪界面
     });
 
     // 检查云开发环境
@@ -28,6 +29,7 @@ Page({
 
   // 拍照
   takePhoto() {
+    console.log('点击拍照按钮');
     wx.chooseImage({
       count: 1,
       sourceType: ['camera'],
@@ -99,6 +101,7 @@ Page({
 
   // 确认剪裁
   getCroppedImage() {
+    console.log('点击确认剪裁');
     this.cropper.getCropperImage(res => {
       if (res) {
         this.compressToTargetSize(res).then(compressedPath => {
@@ -185,6 +188,7 @@ Page({
 
   // 取消裁剪
   cancelCrop() {
+    console.log('点击取消裁剪');
     this.setData({
       showCropper: false,
       imageSrc: ''

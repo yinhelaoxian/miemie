@@ -2,9 +2,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center; /* 居中显示按钮 */
   min-height: 100vh;
   background: #f8f8f8;
+  position: relative;
+  z-index: 1;
+}
+
+.btn {
+  background: #07c160;
+  color: #fff;
+  width: 80%;
+  max-width: 300px;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 18px;
+  text-align: center;
+  margin: 20px 0;
+  z-index: 100; /* 高 z-index 防止被覆盖 */
 }
 
 .cropper-container {
@@ -13,6 +28,7 @@
   position: relative;
   margin: 20px 15px 140px;
   touch-action: auto;
+  z-index: 10;
 }
 
 we-cropper {
@@ -32,15 +48,6 @@ we-cropper {
   justify-content: center;
   gap: 20px;
   z-index: 20;
-}
-
-.btn {
-  background: #07c160;
-  color: #fff;
-  width: 40%;
-  border-radius: 5px;
-  padding: 10px;
-  text-align: center;
 }
 
 .cancel {
