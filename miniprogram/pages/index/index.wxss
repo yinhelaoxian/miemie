@@ -1,13 +1,47 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  background: #f8f8f8;
+}
+
+.cropper-container {
+  width: 100%;
+  height: auto;
+  position: relative;
+  margin-bottom: 120px; /* 为底部按钮预留空间 */
+}
+
 image-cropper {
   width: 100%;
   height: 400px;
-  background: transparent; /* 改为透明背景，避免黑色遮挡 */
+  background: transparent;
   position: relative;
-  z-index: 10; /* 确保裁剪控件在合理图层 */
+  z-index: 10;
 }
-button {
-  margin: 20px;
+
+.button-container {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  z-index: 20;
+}
+
+.btn {
   background: #07c160;
   color: #fff;
-  z-index: 20; /* 确保按钮在裁剪控件之上 */
+  width: 40%;
+  border-radius: 5px;
+  padding: 10px;
+  text-align: center;
+}
+
+.cancel {
+  background: #999;
 }

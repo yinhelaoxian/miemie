@@ -1,10 +1,9 @@
-// pages/index/index.js
 Page({
   data: {
     imageSrc: '', // 拍照后的图片路径
     cropperWidth: 250, // 裁剪框宽度（初始值）
     cropperHeight: 250, // 裁剪框高度（初始值）
-    imgWidth: 0, // 图片宽度（设置为实际宽度的90%）
+    imgWidth: 0, // 图片宽度（90%）
     showCropper: false // 控制裁剪控件显示
   },
 
@@ -15,8 +14,24 @@ Page({
         this.setData({
           cropperHeight: res.windowHeight * 0.6
         });
+      },
+      fail: err => {
+        console.error('获取系统信息失败', err);
+        wx.showToast({
+          title: '初始化失败',
+          icon: 'none'
+        });
       }
     });
+
+    // 检查云开发环境
+    if (!wx.cloud) {
+      wx.showToast({
+        title: '云开发未初始化',
+        icon: 'none'
+      });
+      return;
+    }
   },
 
   // 拍照
@@ -28,13 +43,14 @@ Page({
         console.log('拍照路径:', res.tempFilePaths[0]);
         this.setData({
           imageSrc: res.tempFilePaths[0],
-          showCropper: true // 拍照成功后显示裁剪控件
+          showCropper: true
         });
         wx.showLoading({
           title: '加载中'
         });
       },
       fail: err => {
+        console.error('拍照失败', err);
         wx.showToast({
           title: '拍照失败，请重试',
           icon: 'none',
@@ -53,13 +69,13 @@ Page({
   // 图片加载完成
   loadimage(e) {
     console.log('图片加载完成', e.detail);
-    const { width } = e.detail; // 获取图片实际宽度
+    const { width } = e.detail;
     this.setData({
-      imgWidth: width * 0.9, // 设置图片宽度为实际宽度的90%
-      cropperWidth: width * 0.9 // 设置裁剪框宽度为图片宽度的90%
+      imgWidth: width * 0.9, // 图片宽度为实际宽度的90%
+      cropperWidth: width * 0.9 // 裁剪框宽度为图片宽度的90%
     });
     setTimeout(() => {
-      this.cropper.imgReset(); // 延迟重置图片角度、缩放、位置
+      this.cropper.imgReset();
       wx.hideLoading();
     }, 100);
   },
@@ -77,17 +93,17 @@ Page({
   getCroppedImage() {
     this.cropper.getImg(res => {
       if (res.url) {
-        // 压缩图片
         wx.compressImage({
           src: res.url,
-          quality: 80, // 压缩质量
+          quality: 80,
           success: compressRes => {
             this.uploadToCloud(compressRes.tempFilePath);
             this.setData({
-              showCropper: false // 裁剪完成后隐藏裁剪控件
+              showCropper: false
             });
           },
           fail: err => {
+            console.error('压缩失败', err);
             wx.showToast({
               title: '压缩失败，请重试',
               icon: 'none',
@@ -117,10 +133,10 @@ Page({
     });
   },
 
-  // 上传到腾讯云存储（兼容 yinhelaoxian/miemie 代码库的文件存储功能）
+  // 上传到腾讯云存储（兼容 yinhelaoxian/miemie）
   uploadToCloud(filePath) {
     wx.cloud.uploadFile({
-      cloudPath: `images/${Date.now()}.jpg`, // 云存储路径
+      cloudPath: `images/${Date.now()}.jpg`,
       filePath: filePath,
       success: res => {
         console.log('上传成功', res.fileID);

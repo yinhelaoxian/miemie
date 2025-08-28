@@ -1,4 +1,3 @@
-// app.json（添加权限配置）
 {
   "pages": [
     "pages/index/index"
