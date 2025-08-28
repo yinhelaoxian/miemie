@@ -1,3 +1,4 @@
+// miniprogram/pages/index/index.js
 Page({
   data: {
     imageSrc: '', // 拍照后的图片路径
@@ -5,7 +6,9 @@ Page({
     cropperHeight: 250, // 裁剪框高度（初始值）
     imgWidth: 0, // 图片宽度
     maxCropperWidth: 0, // 裁剪框最大宽度
-    showCropper: false // 控制裁剪控件显示
+    showCropper: false, // 控制裁剪控件显示
+    exportScale: 2, // 输出图片比例（相对于裁剪框尺寸）
+    cropperQuality: 0.8 // 生成图片质量
   },
 
   onLoad() {
@@ -94,23 +97,18 @@ Page({
   getCroppedImage() {
     this.cropper.getImg(res => {
       if (res.url) {
-        wx.compressImage({
-          src: res.url,
-          quality: 80,
-          success: compressRes => {
-            this.uploadToCloud(compressRes.tempFilePath);
-            this.setData({
-              showCropper: false
-            });
-          },
-          fail: err => {
-            console.error('压缩失败', err);
-            wx.showToast({
-              title: '压缩失败，请重试',
-              icon: 'none',
-              duration: 2000
-            });
-          }
+        this.compressToTargetSize(res.url).then(compressedPath => {
+          this.uploadToCloud(compressedPath);
+          this.setData({
+            showCropper: false
+          });
+        }).catch(err => {
+          console.error('压缩失败', err);
+          wx.showToast({
+            title: '压缩失败，请重试',
+            icon: 'none',
+            duration: 2000
+          });
         });
       } else {
         wx.showToast({
@@ -120,6 +118,46 @@ Page({
         });
       }
     });
+  },
+
+  // 压缩图片到目标大小范围 (20K-100K)
+  compressToTargetSize(src) {
+    const targetMaxSize = 100 * 1024; // 100K
+    const targetMinSize = 20 * 1024; // 20K
+    let quality = 80; // 初始质量
+    let filePath = src;
+
+    return new Promise((resolve, reject) => {
+      const compressLoop = () => {
+        wx.compressImage({
+          src: filePath,
+          quality: quality,
+          success: res => {
+            const compressedPath = res.tempFilePath;
+            const size = this.getFileSize(compressedPath);
+
+            if (size > targetMaxSize && quality > 50) {
+              quality -= 10; // 逐步降低质量
+              filePath = compressedPath; // 使用压缩后的路径继续压缩
+              compressLoop(); // 递归压缩
+            } else {
+              // 如果大小在范围或已达最低质量
+              resolve(compressedPath);
+            }
+          },
+          fail: reject
+        });
+      };
+
+      compressLoop();
+    });
+  },
+
+  // 获取文件大小
+  getFileSize(filePath) {
+    const fs = wx.getFileSystemManager();
+    const stat = fs.statSync(filePath);
+    return stat.size;
   },
 
   // 取消裁剪
