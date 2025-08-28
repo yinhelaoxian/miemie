@@ -1,21 +1,23 @@
+// miniprogram/pages/index/index.js
 Page({
   data: {
     imageSrc: '', // 拍照后的图片路径
     cropperWidth: 250, // 裁剪框宽度（初始值）
     cropperHeight: 250, // 裁剪框高度（初始值）
     imgWidth: 0, // 图片宽度
+    imgHeight: 0, // 图片高度
     maxCropperWidth: 0, // 裁剪框最大宽度
+    maxCropperHeight: 0, // 裁剪框最大高度
     showCropper: false // 控制裁剪控件显示
   },
 
   onLoad() {
-    // 动态设置裁剪框高度和最大宽度
+    // 动态设置最大宽度和高度
     wx.getSystemInfo({
       success: res => {
         this.setData({
-          cropperHeight: res.windowHeight * 0.6, // 裁剪框高度为屏幕高度的60%
-          cropperWidth: res.windowWidth * 0.8, // 初始裁剪框宽度为屏幕宽度的80%
-          maxCropperWidth: res.windowWidth * 0.8 // 最大裁剪框宽度
+          maxCropperWidth: res.windowWidth * 0.9, // 最大裁剪框宽度为屏幕宽度的90%
+          maxCropperHeight: res.windowHeight * 0.9 // 最大裁剪框高度为屏幕高度的90%
         });
       },
       fail: err => {
@@ -72,11 +74,27 @@ Page({
   // 图片加载完成
   loadimage(e) {
     console.log('图片加载完成', e.detail);
-    const { width } = e.detail;
+    const { width: originalWidth, height: originalHeight } = e.detail;
+
+    // 计算缩放比例，确保宽度和高度不超过屏幕的90%
+    const screenWidth = wx.getSystemInfoSync().windowWidth;
+    const screenHeight = wx.getSystemInfoSync().windowHeight;
+    const scale = Math.min(screenWidth * 0.9 / originalWidth, screenHeight * 0.9 / originalHeight, 1); // 不超过1，防止放大
+
+    // 计算显示宽度和高度
+    const displayWidth = originalWidth * scale;
+    const displayHeight = originalHeight * scale;
+
     this.setData({
-      imgWidth: this.data.cropperWidth // 图片宽度与裁剪框宽度一致
+      imgWidth: displayWidth,
+      imgHeight: displayHeight,
+      cropperWidth: displayWidth,
+      cropperHeight: displayHeight
     });
+
     setTimeout(() => {
+      // 设置初始裁剪框大小为图片大小（四个角重合）
+      this.cropper.setCutSize(displayWidth, displayHeight);
       this.cropper.imgReset();
       wx.hideLoading();
     }, 100);
@@ -91,7 +109,7 @@ Page({
     });
   },
 
-  // 确认裁剪并获取图片
+  // 确认剪裁并获取图片
   getCroppedImage() {
     this.cropper.getImg(res => {
       if (res.url) {
@@ -123,7 +141,7 @@ Page({
     });
   },
 
-  // 取消裁剪
+  // 取消剪裁
   cancelCrop() {
     this.setData({
       showCropper: false,
