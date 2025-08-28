@@ -9,6 +9,8 @@
       height="{{cropperHeight}}"
       imgSrc="{{imageSrc}}"
       img_width="{{imgWidth}}"
+      min_width="100"
+      max_width="{{maxCropperWidth}}"
       bindload="cropperload"
       bindimageload="loadimage"
       bindtapcut="clickcut"

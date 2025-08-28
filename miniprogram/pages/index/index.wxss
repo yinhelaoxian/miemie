@@ -8,14 +8,14 @@
 }
 
 .cropper-container {
-  width: 100%;
+  width: 90%; /* 缩小容器宽度，留出边距 */
   height: auto;
   position: relative;
-  margin-bottom: 120px; /* 为底部按钮预留空间 */
+  margin: 20px auto 120px; /* 上下左右居中，底部留空间给按钮 */
 }
 
 image-cropper {
-  width: 100%;
+  width: 100%; /* 裁剪框宽度占容器宽度 */
   height: 400px;
   background: transparent;
   position: relative;

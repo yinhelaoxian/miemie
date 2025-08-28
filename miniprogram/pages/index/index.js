@@ -3,16 +3,19 @@ Page({
     imageSrc: '', // 拍照后的图片路径
     cropperWidth: 250, // 裁剪框宽度（初始值）
     cropperHeight: 250, // 裁剪框高度（初始值）
-    imgWidth: 0, // 图片宽度（90%）
+    imgWidth: 0, // 图片宽度
+    maxCropperWidth: 0, // 裁剪框最大宽度
     showCropper: false // 控制裁剪控件显示
   },
 
   onLoad() {
-    // 动态设置裁剪框高度为屏幕高度的60%
+    // 动态设置裁剪框高度和最大宽度
     wx.getSystemInfo({
       success: res => {
         this.setData({
-          cropperHeight: res.windowHeight * 0.6
+          cropperHeight: res.windowHeight * 0.6, // 裁剪框高度为屏幕高度的60%
+          cropperWidth: res.windowWidth * 0.8, // 初始裁剪框宽度为屏幕宽度的80%
+          maxCropperWidth: res.windowWidth * 0.8 // 最大裁剪框宽度
         });
       },
       fail: err => {
@@ -71,8 +74,7 @@ Page({
     console.log('图片加载完成', e.detail);
     const { width } = e.detail;
     this.setData({
-      imgWidth: width * 0.9, // 图片宽度为实际宽度的90%
-      cropperWidth: width * 0.9 // 裁剪框宽度为图片宽度的90%
+      imgWidth: this.data.cropperWidth // 图片宽度与裁剪框宽度一致
     });
     setTimeout(() => {
       this.cropper.imgReset();
@@ -89,7 +91,7 @@ Page({
     });
   },
 
-  // 确认剪裁并获取图片
+  // 确认裁剪并获取图片
   getCroppedImage() {
     this.cropper.getImg(res => {
       if (res.url) {
