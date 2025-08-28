@@ -1,4 +1,4 @@
-const WeCropper = require('../../components/we-cropper/we-cropper.js');
+const WeCropper = require('../../components/we-cropper/index.js');
 
 Page({
   data: {
