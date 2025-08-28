@@ -1,10 +1,21 @@
+const WeCropper = require('../../components/we-cropper/we-cropper.js');
+
 Page({
   data: {
     imageSrc: '', // 拍照后的图片路径
+    cropperWidth: 0, // 裁剪框宽度
+    cropperHeight: 0, // 裁剪框高度
     showCropper: false // 控制裁剪控件显示
   },
 
   onLoad() {
+    // 初始化裁剪框尺寸
+    const { windowWidth, windowHeight } = wx.getSystemInfoSync();
+    this.setData({
+      cropperWidth: windowWidth * 0.9,
+      cropperHeight: windowHeight * 0.6
+    });
+
     // 检查云开发环境
     if (!wx.cloud) {
       wx.showToast({
@@ -22,22 +33,11 @@ Page({
       sourceType: ['camera'],
       success: res => {
         console.log('拍照路径:', res.tempFilePaths[0]);
-        // 预压缩图片以降低分辨率
-        this.preCompressImage(res.tempFilePaths[0]).then(preCompressedPath => {
-          this.setData({
-            imageSrc: preCompressedPath,
-            showCropper: true
-          });
-          wx.showLoading({
-            title: '加载中'
-          });
-        }).catch(err => {
-          console.error('预压缩失败', err);
-          wx.showToast({
-            title: '图片处理失败',
-            icon: 'none'
-          });
+        this.setData({
+          imageSrc: res.tempFilePaths[0],
+          showCropper: true
         });
+        this.initCropper();
       },
       fail: err => {
         console.error('拍照失败', err);
@@ -50,63 +50,46 @@ Page({
     });
   },
 
-  // 预压缩图片
-  preCompressImage(src) {
-    return new Promise((resolve, reject) => {
-      wx.compressImage({
-        src: src,
-        quality: 80,
-        success: res => {
-          console.log('预压缩路径:', res.tempFilePath);
-          resolve(res.tempFilePath);
-        },
-        fail: err => {
-          console.error('预压缩失败', err);
-          reject(err);
-        }
-      });
+  // 初始化裁剪器
+  initCropper() {
+    const { cropperWidth, cropperHeight, imageSrc } = this.data;
+    this.cropper = new WeCropper(this.selectComponent('#we-cropper'), {
+      id: 'we-cropper',
+      width: cropperWidth,
+      height: cropperHeight,
+      scale: 2.5, // 最大缩放倍数
+      zoom: 8, // 缩放系数
+      cut: {
+        x: 0,
+        y: 0,
+        width: cropperWidth,
+        height: cropperHeight
+      }
+    });
+    this.cropper.pushOrign(imageSrc);
+    wx.showLoading({
+      title: '加载中'
     });
   },
 
-  // 裁剪控件初始化完成
-  cropperload(e) {
-    console.log('cropper 初始化完成', e);
-    this.cropper = this.selectComponent('#image-cropper');
-    console.log('cropper 实例:', this.cropper);
+  // 裁剪器准备就绪
+  cropperReady(e) {
+    console.log('cropper 准备就绪', e);
+  },
+
+  // 图片开始加载
+  beforeImageLoad(e) {
+    console.log('图片开始加载', e);
   },
 
   // 图片加载完成
-  loadimage(e) {
-    console.log('图片加载完成', e.detail);
-    const { width: originalWidth, height: originalHeight } = e.detail;
-
-    try {
-      console.log('图片尺寸:', originalWidth, originalHeight);
-      if (!this.cropper) {
-        console.error('cropper 未初始化');
-        wx.showToast({
-          title: '裁剪控件未加载',
-          icon: 'none'
-        });
-      } else {
-        // 延迟检查组件状态
-        setTimeout(() => {
-          console.log('cropper 属性:', this.cropper.data);
-        }, 200);
-      }
-    } catch (err) {
-      console.error('加载裁剪控件失败', err);
-      wx.showToast({
-        title: '加载裁剪控件失败',
-        icon: 'none'
-      });
-    } finally {
-      wx.hideLoading(); // 确保加载提示关闭
-    }
+  imageLoad(e) {
+    console.log('图片加载完成', e);
+    wx.hideLoading();
   },
 
-  // 点击裁剪框预览图片
-  clickcut(e) {
+  // 点击裁剪框
+  tapCut(e) {
     console.log('裁剪框交互:', e.detail);
     wx.previewImage({
       current: e.detail.url,
@@ -114,11 +97,11 @@ Page({
     });
   },
 
-  // 确认剪裁并获取图片
+  // 确认剪裁
   getCroppedImage() {
-    this.cropper.getImg(res => {
-      if (res.url) {
-        this.compressToTargetSize(res.url).then(compressedPath => {
+    this.cropper.getCropperImage(res => {
+      if (res) {
+        this.compressToTargetSize(res).then(compressedPath => {
           this.uploadToCloud(compressedPath);
           this.setData({
             showCropper: false

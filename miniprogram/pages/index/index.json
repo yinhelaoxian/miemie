@@ -1,7 +1,7 @@
 {
   "navigationBarTitleText": "Mie~~",
   "usingComponents": {
-    "image-cropper": "/components/image-cropper/image-cropper"
+    "we-cropper": "/components/we-cropper/we-cropper"
   },
   "disableScroll": true
 }

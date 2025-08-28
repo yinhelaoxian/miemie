@@ -1,15 +1,15 @@
 <view class="container">
   <button class="btn" bindtap="takePhoto">拍照录入错题</button>
   <view wx:if="{{showCropper}}" class="cropper-container">
-    <image-cropper
-      id="image-cropper"
-      limit_move="{{true}}"
-      disable_rotate="{{true}}"
-      imgSrc="{{imageSrc}}"
-      bindload="cropperload"
-      bindimageload="loadimage"
-      bindtapcut="clickcut"
-    ></image-cropper>
+    <we-cropper
+      id="we-cropper"
+      width="{{cropperWidth}}"
+      height="{{cropperHeight}}"
+      bind:ready="cropperReady"
+      bind:beforeImageLoad="beforeImageLoad"
+      bind:imageLoad="imageLoad"
+      bind:tapcut="tapCut"
+    ></we-cropper>
   </view>
   <view wx:if="{{showCropper}}" class="button-container">
     <button class="btn" bindtap="getCroppedImage">确认剪裁</button>
